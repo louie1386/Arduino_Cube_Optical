@@ -16,9 +16,12 @@ void button_check(int ch) {
     if (Heating_Begin[ch] == false) {
       buzzer_once();
       if (Temp_steady[ch] == true) {
-        HeatingTime_Counter[ch] = HeatingTime[ch];
+        HeatingTime_Counter[ch] = HeatingTime[ch] * SecCycles;
         Tar[ch] = PreHeatingTemp[ch];
         Heating_Begin[ch] = true;
+        Display_ResultImg(ch, true);
+        Display_PlotImg(ch, true);
+        SavaData_OpenFile(ch);
       }
     }
   }
@@ -27,9 +30,12 @@ void button_check(int ch) {
       button_disable_counter[ch]--;
     }
     else {
+      if (Heating_Begin[ch])
+        SavaData_CloseFile(ch);
       Heating_Begin[ch] = false;
-      HeatingTime_Counter[ch] = (-1);
+      HeatingTime_Counter[ch] = Heating_beg_tag;
       Tar[ch] = PreHeatingTemp[ch];
     }
   }
 }
+

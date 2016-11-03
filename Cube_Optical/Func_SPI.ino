@@ -36,3 +36,4 @@ unsigned int SPI_Read_channel(int ch) {
   ADCdata = ADCdata / 4;
   return ADCdata;
 }
+
