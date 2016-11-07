@@ -317,4 +317,5 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   timer.update();
+  wdt_reset();
 }

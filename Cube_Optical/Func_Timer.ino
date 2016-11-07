@@ -35,7 +35,6 @@ void Timer_CTR() {
     Cycles = 0;
   }
   Cycles++;
-  wdt_reset();
 }
 
 
