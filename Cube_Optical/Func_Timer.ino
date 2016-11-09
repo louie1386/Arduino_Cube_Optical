@@ -1,7 +1,6 @@
 void Timer_setup() {
   timer.every(PIDTime, Timer_PID);
   timer.every(CycTime, Timer_CTR);
-  wdt_enable(WDTO_4S);
 }
 
 void  Timer_PID() {

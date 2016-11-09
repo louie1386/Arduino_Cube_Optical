@@ -1,9 +1,6 @@
 void SavaData_setup() {
-  SavaData_Reset();
   SavaData_CheckModule();
-  Serial_Sav.begin(Baudrate_Sav_Def);
-  fprot_init(SavaData_TXD, SavaData_RXD, SavaData_Delay);
-  SavaData_SetBaudRate();
+  SavaData_Reset();
   SavaData_CheckCard();
 }
 
@@ -13,6 +10,10 @@ void SavaData_Reset() {
   delay(10);
   digitalWrite(SavReset, HIGH);
   delay(10);
+
+  Serial_Sav.begin(Baudrate_Sav_Def);
+  fprot_init(SavaData_TXD, SavaData_RXD, SavaData_Delay);
+  SavaData_SetBaudRate();
 }
 
 void SavaData_CheckModule() {
@@ -53,27 +54,29 @@ void SavaData_Delay(unsigned long ms) {
 }
 
 //------------------------------------------------------
-void SavaData_NewPath(int num) {
+void SavaData_NewPath(int Num) {
   int dirnum[3];
-  if (Save_file_num[num] > 999)
-    Save_file_num[num] = 0;
-  dirnum[0] = int(Save_file_num[num] / 100);
-  dirnum[1] = int(Save_file_num[num] % 100 / 10);
-  dirnum[2] = int(Save_file_num[num] % 10);
+  if (Save_file_num[Num] > 999)
+    Save_file_num[Num] = 0;
+  dirnum[0] = int(Save_file_num[Num] / 100);
+  dirnum[1] = int(Save_file_num[Num] % 100 / 10);
+  dirnum[2] = int(Save_file_num[Num] % 10);
   for (int i = 0; i < 3; i++)
     Save_file_path[9 + i] = char(dirnum[i] + 48);
-  Save_file_path[17] = char(num + 1 + 48);
+  Save_file_path[17] = char(Num + 1 + 48);
 }
 
 void SavaData_OpenFile(int num) {
   if (Save_cardin) {
     if (Save_file_ID[num])
       fprot_close(Save_file_ID[num]);
+    Save_file_num[num] = 0;
+    SavaData_NewPath(num);
     while (fprot_open(Save_file_path, FPROT_MODE_RW | FPROT_MODE_CREATE_NEW, &Save_file_ID[num]) != FPROT_NO_ERROR) {
       Save_file_num[num]++;
       SavaData_NewPath(num);
     }
-
+    Serial_Log.print(Save_file_path);
     if (Save_file_ID[num] == FPROT_INVALID_FILE) {
       Save_file_ID[num] = 0;
       Serial_Log.print("-----------Open well");

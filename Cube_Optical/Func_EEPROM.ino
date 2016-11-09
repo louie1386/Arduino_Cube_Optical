@@ -1,7 +1,9 @@
 void EEPROM_setup() {
-  if (EEPROM[EEPROM_WriteIn_addr] == EEPROM_WriteInByte) {
+  unsigned char WriteInByte;
+  EEPROM.get(EEPROM_WriteIn_addr, WriteInByte);
+  if (WriteInByte == EEPROM_WriteInByte) {
     EEPROM_writeall();
-    EEPROM.put(EEPROM_WriteIn_addr, EEPROM_WriteInByte);
+    EEPROM.put(EEPROM_WriteIn_addr, 0x00);
   }
   else {
     EEPROM_readall();

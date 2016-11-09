@@ -12,8 +12,9 @@
     1.01      新增 EEPROM 功能
     1.02      新增 SD Card 功能
     1.03      新增 Watchdog 功能
+    1.04      修正溫度讀取, SD card與EEPROM bug
 */
-#define Version         1.03
+#define Version         1.04
 
 //Pin define-----------------
 //Analog Pin
@@ -53,6 +54,7 @@
 //SCK   52
 #define  SSPin          53  //PB0, P19
 
+#define  Dis_Module     19  //RX1
 #define  SD_Module      17  //RX2
 
 int   TIC_pin[6] = {TIC0, TIC1, TIC2, TIC3, TIC4, TIC5};
@@ -131,9 +133,9 @@ PID PID3(&Temp[3], &Volt[3], &Tar[3], Kp[3], Ki[3], Kd[3], DIRECT);
 #define PreHeatingTime_Def    60    //預熱時間
 #define ResponseTime_Def      HeatingTime_Def - PreHeatingTime_Def
 
-#define PreHeatingTemp_Def    120   //預熱溫度
-#define HeatingTemp_Max_Def   100   //PCR反應溫度
-#define HeatingTemp_Min_Def   90    //PCR反應溫度
+#define PreHeatingTemp_Def    50   //預熱溫度
+#define HeatingTemp_Max_Def   50   //PCR反應溫度
+#define HeatingTemp_Min_Def   50    //PCR反應溫度
 
 double  HeatingTime[4]        = {HeatingTime_Def, HeatingTime_Def, HeatingTime_Def, HeatingTime_Def};
 double  ResponseTime[4]       = {ResponseTime_Def, ResponseTime_Def, ResponseTime_Def, ResponseTime_Def};
@@ -169,12 +171,12 @@ bool  LEDEanbleType[LED_EnableTimes + 1] = {false, false, true, true, true,
 
 //SPI_ADC--------------------
 #define Well_0_A            7
-#define Well_0_B            4
-#define Well_1_A            1
+#define Well_0_B            0
+#define Well_1_A            5
 #define Well_1_B            6
 #define Well_2_A            3
-#define Well_2_B            0
-#define Well_3_A            5
+#define Well_2_B            4
+#define Well_3_A            1
 #define Well_3_B            2
 
 #define  StartBit           B10000000
@@ -223,6 +225,7 @@ int     Dis_data_base[8][10] = {
 int     Dis_data_base_avg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 int     Dis_plot_min[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 bool    Dis_plot_base_enable = true;
+bool    Display_Module = false;
 
 //EEPROM---------------------
 #define Size_Double             sizeof(double)
@@ -312,6 +315,7 @@ void setup() {
   SavaData_setup();
   Display_setup();
   Timer_setup();
+  wdt_enable(WDTO_4S);
 }
 
 void loop() {
