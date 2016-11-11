@@ -201,6 +201,7 @@ double PD_Cons[4] = {PD_Cons_0, PD_Cons_1, PD_Cons_2, PD_Cons_3};
 #define Dis_ConstDig_Name     GENIE_OBJ_CUSTOM_DIGITS
 #define Dis_PlotImg_Name      GENIE_OBJ_SCOPE
 
+#define Dis_ADCcon_Def        2000
 #define Dis_pA_Gate_Def       300
 #define Dis_pB_Gate_Def       300
 Genie genie;

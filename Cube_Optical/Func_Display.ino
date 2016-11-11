@@ -86,7 +86,7 @@ void Display_PlotImg(int num, bool reset) {
   if (Display_Module) {
     if (button[num] == true && reset == false) {
       if (LEDonoff[num] == true) {
-        if (Dis_data_num[num] == 0) {
+        if (Dis_data_num[num * 2] == 0) {
           Dis_data_base_avg[num * 2] = 0;
           Dis_data_base_avg[num * 2 + 1] = 0;
           if (Dis_plot_base_enable) {
@@ -96,11 +96,11 @@ void Display_PlotImg(int num, bool reset) {
             }
           }
         }
-        else if (Dis_data_num[num] >= 20 && Dis_data_num[num] < 40) {
+        else if (Dis_data_num[num * 2] >= 20 && Dis_data_num[num * 2] < 40) {
           Dis_data_avg[num * 2] += SPI_ADCdata[num * 2] / 20;
           Dis_data_avg[num * 2 + 1] += SPI_ADCdata[num * 2 + 1] / 20;
         }
-        else if (Dis_data_num[num] == 40) {
+        else if (Dis_data_num[num * 2] == 40) {
           if (Dis_plot_num[num] == 0) {
             Dis_plot_zero[num * 2] = Dis_data_avg[num * 2] - Dis_data_base_avg[num * 2];
             Dis_plot_zero[num * 2 + 1] = Dis_data_avg[num * 2 + 1] - Dis_data_base_avg[num * 2 + 1];
@@ -114,12 +114,18 @@ void Display_PlotImg(int num, bool reset) {
           Dis_plot_min[num * 2] = min(Dis_plot_min[num * 2],  dA);
           Dis_plot_min[num * 2 + 1] = min(Dis_plot_min[num * 2 + 1],  dB);
 
-          int pA = double(dA) * 150 / 16384;
-          int pB = double(dB) * 150 / 16384;
+          int pA = double(dA) * 150 / Dis_ADCcon_Def;
+          int pB = double(dB) * 150 / Dis_ADCcon_Def;
           for (int i = 0; i < 20; i++) {
             genie.WriteObject(Dis_PlotImg_Name, (num), pA);
             genie.WriteObject(Dis_PlotImg_Name, (num), pB);
           }
+//          Serial_Log.println(Dis_data_avg[num * 2]);
+//          Serial_Log.println(Dis_data_avg[num * 2 + 1]);
+//          Serial_Log.println(dA);
+//          Serial_Log.println(dB);
+//          Serial_Log.println(pA);
+//          Serial_Log.println(pB);
           Dis_plot_end[num * 2] = dA - Dis_plot_min[num * 2];
           Dis_plot_end[num * 2 + 1] = dB - Dis_plot_min[num * 2 + 1];
 
@@ -153,8 +159,8 @@ void Display_PlotImg(int num, bool reset) {
       Dis_plot_zero[num * 2 + 1] = 0;
       Dis_data_avg[num * 2] = 0;
       Dis_data_avg[num * 2 + 1] = 0;
-      Dis_data_num[num] = 0;
-      Dis_plot_num[num] = 0;
+      Dis_data_num[num * 2] = 0;
+      Dis_data_num[num * 2 + 1] = 0;
     }
   }
 }
