@@ -72,23 +72,23 @@ void SavaData_OpenFile(int num) {
       fprot_close(Save_file_ID[num]);
     Save_file_num[num] = 0;
     SavaData_NewPath(num);
-    while (fprot_open(Save_file_path, FPROT_MODE_RW | FPROT_MODE_CREATE_NEW, &Save_file_ID[num]) != FPROT_NO_ERROR) {
+    unsigned char File_ID = 0;
+    while (fprot_open(Save_file_path, FPROT_MODE_RW | FPROT_MODE_CREATE_NEW, &File_ID) != FPROT_NO_ERROR) {
       Save_file_num[num]++;
       SavaData_NewPath(num);
     }
     Serial_Log.print(Save_file_path);
+    Save_file_ID[num] = File_ID;
     if (Save_file_ID[num] == FPROT_INVALID_FILE) {
+      String str_f = String("-----------Open well") + String(num + 1) + String(" file fail!---") + String(Save_file_ID[num]);
+      Serial_Log.println(str_f);
       Save_file_ID[num] = 0;
-      Serial_Log.print("-----------Open well");
-      Serial_Log.print(num + 1);
-      Serial_Log.println(" file fail!");
     }
     else {
       SaveData_WriteIn_Title(num);
       fprot_flush(Save_file_ID[num]);
-      Serial_Log.print("-----------Open well");
-      Serial_Log.print(num + 1);
-      Serial_Log.println(" file successful!");
+      String str_t = String("-----------Open well") + String(num + 1) + String(" file successful!---") + String(Save_file_ID[num]);
+      Serial_Log.println(str_t);
     }
   }
 }
@@ -96,23 +96,26 @@ void SavaData_OpenFile(int num) {
 void SavaData_CloseFile(int num) {
   if (Save_cardin) {
     if (Save_file_ID[num]) {
+      fprot_flush(Save_file_ID[num]);
       fprot_close(Save_file_ID[num]);
-      Serial_Log.print("-----------Close well");
-      Serial_Log.print(num + 1);
-      Serial_Log.println(" file");
+      String str_c = String("-----------Close well") + String(num + 1) + (" file---") + String(Save_file_ID[num]);
+      Serial_Log.println(str_c);
+      Save_file_ID[num] = 0;
     }
   }
 }
 
 void SavaData_CheckCard() {
   if (Save_Module) {
-    if (fprot_check_card() == FPROT_NO_ERROR) {
+    unsigned char ret = fprot_check_card();
+    if (ret == FPROT_NO_ERROR) {
       fprot_mkdir(Save_file_dir);
-      if (!Save_cardin)
+      if (!Save_cardin) {
         Serial_Log.println("-----------SD Card In!");
+      }
       Save_cardin = true;
     }
-    else {
+    else if (ret = FPROT_NO_CARD) {
       if (Save_cardin) {
         fprot_close_all();
         Serial_Log.println("-----------SD Card Out!");
@@ -122,18 +125,21 @@ void SavaData_CheckCard() {
   }
 }
 
-void SaveData_WriteIn(int num, char str[]) {
+void SaveData_WriteIn(int num, String str) {
   unsigned long written;
+  int strlength = str.length() + 1;
+  char strarray[strlength];
+  str.toCharArray(strarray, strlength);
   if (Save_cardin) {
     if (Save_file_ID[num]) {
-      if (fprot_write(Save_file_ID[num], str, strlen(str), &written) == FPROT_NO_ERROR)
+      if (fprot_write(Save_file_ID[num], strarray, strlen(strarray), &written) == FPROT_NO_ERROR)
         fprot_flush(Save_file_ID[num]);
     }
   }
 }
 
 void SaveData_WriteIn_Title(int num) {
-  char title[] = "Time,Plot A,Plot B, LED, Temperature\r\n";
+  String title = "Time,Plot A,Plot B, LED, Temperature, Well Check\r\n";
   SaveData_WriteIn(num, title);
 }
 
@@ -144,18 +150,16 @@ void SaveData_WriteIn_Data(int num) {
     String pB = String(SPI_ADCdata[num * 2 + 1]);
     String LED = String(LEDonoff[num]);
     String tr = String(Temp[num]);
+    String wn = String(num + 1);
 
     String str =
       Time + String(", ") +
       pA + String(", ") +
       pB + String(", ") +
       LED + String(", ") +
-      tr + String("\r\n");
-
-    int strlength = str.length() + 1;
-    char strarray[strlength];
-    str.toCharArray(strarray, strlength);
-    SaveData_WriteIn(num, strarray);
+      tr  + String(", ") +
+      wn + String("\r\n");
+    SaveData_WriteIn(num, str);
   }
 }
 
