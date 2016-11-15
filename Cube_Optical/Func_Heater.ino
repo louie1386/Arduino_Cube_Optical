@@ -1,5 +1,4 @@
 void  HeatingTime_CounterRun(int num) {
-  button_check(num);
   if (HeatingTime_Counter[num] == (ResponseTime[num] * SecCycles))
     Tar[num] = HeatingTemp_Min[num];
   else if (HeatingTime_Counter[num] == 0) {

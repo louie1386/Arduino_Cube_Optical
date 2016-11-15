@@ -1,3 +1,4 @@
+#include <cubeled.h>
 #include <avr/wdt.h>
 #include <fprot.h>
 #include <genieArduino.h>
@@ -13,8 +14,9 @@
     1.02      新增 SD Card 功能
     1.03      新增 Watchdog 功能
     1.04      修正溫度讀取, SD card與EEPROM bug
+    1.05      修改LED控制為動態設定
 */
-#define Version         1.04
+#define Version         1.05
 
 //Pin define-----------------
 //Analog Pin
@@ -168,6 +170,8 @@ bool  LEDEanbleType[LED_EnableTimes + 1] = {false, false, true, true, true,
                                             true, true, true, true, true,
                                             true, true, true, true, true, false
                                            };
+#define LED_MaskSec         (120 * SecCycles)
+CubeLed CL0, CL1, CL2, CL3;
 
 //SPI_ADC--------------------
 #define Well_0_A            7
@@ -312,7 +316,7 @@ void setup() {
   Button_setup();
   Led_setup();
   PID_setup();
-  SPI_setup();
+  ADC_setup();
   SavaData_setup();
   Display_setup();
   Timer_setup();

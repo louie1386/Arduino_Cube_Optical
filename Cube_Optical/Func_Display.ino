@@ -120,12 +120,12 @@ void Display_PlotImg(int num, bool reset) {
             genie.WriteObject(Dis_PlotImg_Name, (num), pA);
             genie.WriteObject(Dis_PlotImg_Name, (num), pB);
           }
-//          Serial_Log.println(Dis_data_avg[num * 2]);
-//          Serial_Log.println(Dis_data_avg[num * 2 + 1]);
-//          Serial_Log.println(dA);
-//          Serial_Log.println(dB);
-//          Serial_Log.println(pA);
-//          Serial_Log.println(pB);
+          //          Serial_Log.println(Dis_data_avg[num * 2]);
+          //          Serial_Log.println(Dis_data_avg[num * 2 + 1]);
+          //          Serial_Log.println(dA);
+          //          Serial_Log.println(dB);
+          //          Serial_Log.println(pA);
+          //          Serial_Log.println(pB);
           Dis_plot_end[num * 2] = dA - Dis_plot_min[num * 2];
           Dis_plot_end[num * 2 + 1] = dB - Dis_plot_min[num * 2 + 1];
 

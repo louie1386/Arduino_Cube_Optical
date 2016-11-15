@@ -5,12 +5,12 @@ void Button_setup() {
   pinMode(Button_3, INPUT);
 }
 
-bool button_read(int pin) {
+bool Button_read(int pin) {
   return (digitalRead(pin));
 }
 
-void button_check(int ch) {
-  button[ch] = button_read(button_pin[ch]);
+void Button_check(int ch) {
+  button[ch] = Button_read(button_pin[ch]);
   if (button[ch] == true) {
     button_disable_counter[ch] = button_disable_delay;
     if (Heating_Begin[ch] == false) {

@@ -80,15 +80,19 @@ void SavaData_OpenFile(int num) {
     Serial_Log.print(Save_file_path);
     Save_file_ID[num] = File_ID;
     if (Save_file_ID[num] == FPROT_INVALID_FILE) {
-      String str_f = String("-----------Open well") + String(num + 1) + String(" file fail!---") + String(Save_file_ID[num]);
-      Serial_Log.println(str_f);
+      Serial_Log.print("-----------Open well");
+      Serial_Log.print(num + 1);
+      Serial_Log.print(" file fail!---");
+      Serial_Log.println(Save_file_ID[num]);
       Save_file_ID[num] = 0;
     }
     else {
       SaveData_WriteIn_Title(num);
       fprot_flush(Save_file_ID[num]);
-      String str_t = String("-----------Open well") + String(num + 1) + String(" file successful!---") + String(Save_file_ID[num]);
-      Serial_Log.println(str_t);
+      Serial_Log.print("-----------Open well");
+      Serial_Log.print(num + 1);
+      Serial_Log.print(" file successful!---");
+      Serial_Log.println(Save_file_ID[num]);
     }
   }
 }
@@ -98,8 +102,10 @@ void SavaData_CloseFile(int num) {
     if (Save_file_ID[num]) {
       fprot_flush(Save_file_ID[num]);
       fprot_close(Save_file_ID[num]);
-      String str_c = String("-----------Close well") + String(num + 1) + (" file---") + String(Save_file_ID[num]);
-      Serial_Log.println(str_c);
+      Serial_Log.print("-----------Close well");
+      Serial_Log.print(num + 1);
+      Serial_Log.print(" file---");
+      Serial_Log.println(Save_file_ID[num]);
       Save_file_ID[num] = 0;
     }
   }
@@ -132,8 +138,8 @@ void SaveData_WriteIn(int num, String str) {
   str.toCharArray(strarray, strlength);
   if (Save_cardin) {
     if (Save_file_ID[num]) {
-      if (fprot_write(Save_file_ID[num], strarray, strlen(strarray), &written) == FPROT_NO_ERROR)
-        fprot_flush(Save_file_ID[num]);
+      fprot_write(Save_file_ID[num], strarray, strlen(strarray), &written);
+      //fprot_flush(Save_file_ID[num]);
     }
   }
 }
