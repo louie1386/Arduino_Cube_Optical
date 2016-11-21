@@ -154,7 +154,7 @@ void SaveData_WriteIn_Data(int num) {
     String Time = String(float(HeatingTime[num] * SecCycles - HeatingTime_Counter[num]) / 10, 1);
     String pA = String(SPI_ADCdata[num * 2]);
     String pB = String(SPI_ADCdata[num * 2 + 1]);
-    String LED = String(LEDonoff[num]);
+    String LED = String(digitalRead(LED_pin[num]));
     String tr = String(Temp[num]);
     String wn = String(num + 1);
 

@@ -3,6 +3,7 @@ void Serial_setup() {
   Serial_Log.println("");
   Serial_Log.print("Start/Reset (Version: ");
   Serial_Log.print(Version);
+  Serial_Log.print(subVersion);
   Serial_Log.println(")");
   Serial_Log.print("PID: (");
   Serial_Log.print(double(dKp), 0);
@@ -36,14 +37,14 @@ void serial_log_TXD() {
       Serial_Log.println(" sec");
     }
   }
-/*
-  Serial_Log.print("PD-ADC: (");
-  for (int i = 0; i < 8; i++) {
-    Serial_Log.print((double(SPI_ADCdata[i]) * 4.096 * 3 / 16384));
-    Serial_Log.print("V, ");
-  }
-  Serial_Log.println(")");
-*/
+  /*
+    Serial_Log.print("PD-ADC: (");
+    for (int i = 0; i < 8; i++) {
+      Serial_Log.print((double(SPI_ADCdata[i]) * 4.096 * 3 / 16384));
+      Serial_Log.print("V, ");
+    }
+    Serial_Log.println(")");
+  */
   Serial_Log.print("Lower Temp: ");
   Serial_Log.println(Temp[4]);
   Serial_Log.print("Upper Temp: ");
@@ -73,6 +74,10 @@ void serial_log_RXD() {
         Serial_Log.println("-------------------------Enter EEPROM mode!");
         serial_log_EEPROM_ask();
       }
+      else if (RXD == 'c') {
+        EEPROM_clear();
+        Serial_Log.println("-------------------------Clear EEPROM!");
+      }
     }
     else {
       serial_log_EEPROM_WriteIn(RXD);
@@ -80,14 +85,22 @@ void serial_log_RXD() {
   }
 }
 
-void serial_log_EEPROM_item(double *item, int itemnum, int pointnum, String namestr) {
+//EEPROM------------------------------------------
+void serial_log_EEPROM_item(double *item, unsigned int *addr, int itemnum, int pointnum, String namestr) {
   Serial_Log.print(namestr);
+  double buff;
   for (int i = 0; i < itemnum - 1; i++) {
     Serial_Log.print(item[i], pointnum);
-    Serial_Log.print(", ");
+    Serial_Log.print("[");
+    EEPROM.get(addr[i], buff);
+    Serial_Log.print(buff, pointnum);
+    Serial_Log.print("], ");
   }
   Serial_Log.print(item[itemnum - 1], pointnum);
-  Serial_Log.println("");
+  Serial_Log.print("[");
+  EEPROM.get(addr[itemnum - 1], buff);
+  Serial_Log.print(buff, pointnum);
+  Serial_Log.println("]");
 }
 
 void serial_log_EEPROM_ReadOut() {
@@ -104,14 +117,14 @@ void serial_log_EEPROM_ReadOut() {
     "---PD Cons:                  ",
     "---Result Gate(ADC counter): "
   };
-  serial_log_EEPROM_item(HeatingTime, 4, 0, namestr[0]);
-  serial_log_EEPROM_item(ResponseTime, 4, 0, namestr[1]);
-  serial_log_EEPROM_item(PreHeatingTemp, 4, 0, namestr[2]);
-  serial_log_EEPROM_item(HeatingTemp_Max, 4, 0, namestr[3]);
-  serial_log_EEPROM_item(HeatingTemp_Min, 4, 0, namestr[4]);
-  serial_log_EEPROM_item(Temp_diff, 4, 1, namestr[5]);
-  serial_log_EEPROM_item(PD_Cons, 4, 1, namestr[6]);
-  serial_log_EEPROM_item(Dis_plot_Gate, 2, 0, namestr[7]);
+  serial_log_EEPROM_item(HeatingTime, HeatingTime_addr, 4, 0, namestr[0]);
+  serial_log_EEPROM_item(ResponseTime, ResponseTime_addr, 4, 0, namestr[1]);
+  serial_log_EEPROM_item(PreHeatingTemp, PreHeatingTemp_addr, 4, 0, namestr[2]);
+  serial_log_EEPROM_item(HeatingTemp_Max, HeatingTemp_Max_addr, 4, 0, namestr[3]);
+  serial_log_EEPROM_item(HeatingTemp_Min, HeatingTemp_Min_addr, 4, 0, namestr[4]);
+  serial_log_EEPROM_item(Temp_diff, Temp_diff_addr, 4, 1, namestr[5]);
+  serial_log_EEPROM_item(PD_Cons, PD_Cons_addr, 4, 1, namestr[6]);
+  serial_log_EEPROM_item(Dis_plot_Gate, Dis_plot_Gate_addr, 2, 0, namestr[7]);
   Serial_Log.println("");
 }
 

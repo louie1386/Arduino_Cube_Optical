@@ -16,7 +16,8 @@
     1.04      修正溫度讀取, SD card與EEPROM bug
     1.05      修改LED控制為動態設定
 */
-#define Version         1.05
+#define Version         "1.05."
+#define subVersion      "11.21.01 "
 
 //Pin define-----------------
 //Analog Pin
@@ -74,10 +75,10 @@ Timer timer;
 int Cycles = 0;
 
 //Temp-----------------------
-#define TempIC_Diff_0   0
-#define TempIC_Diff_1   0
-#define TempIC_Diff_2   0
-#define TempIC_Diff_3   0
+#define TempIC_Diff_0   2
+#define TempIC_Diff_1   1
+#define TempIC_Diff_2   2.5
+#define TempIC_Diff_3   2
 
 #define TempIC_base     400
 #define TempIC_reso     19.5
@@ -131,13 +132,13 @@ PID PID2(&Temp[2], &Volt[2], &Tar[2], Kp[2], Ki[2], Kd[2], DIRECT);
 PID PID3(&Temp[3], &Volt[3], &Tar[3], Kp[3], Ki[3], Kd[3], DIRECT);
 
 //Heater--------------------
-#define HeatingTime_Def       900   //PCR反應時間(含預熱時間)
+#define HeatingTime_Def       720   //PCR反應時間(含預熱時間)
 #define PreHeatingTime_Def    60    //預熱時間
 #define ResponseTime_Def      HeatingTime_Def - PreHeatingTime_Def
 
-#define PreHeatingTemp_Def    50   //預熱溫度
-#define HeatingTemp_Max_Def   50   //PCR反應溫度
-#define HeatingTemp_Min_Def   50    //PCR反應溫度
+#define PreHeatingTemp_Def    120   //預熱溫度
+#define HeatingTemp_Max_Def   102   //PCR反應溫度
+#define HeatingTemp_Min_Def   102   //PCR反應溫度
 
 double  HeatingTime[4]        = {HeatingTime_Def, HeatingTime_Def, HeatingTime_Def, HeatingTime_Def};
 double  ResponseTime[4]       = {ResponseTime_Def, ResponseTime_Def, ResponseTime_Def, ResponseTime_Def};
@@ -145,7 +146,7 @@ double  PreHeatingTemp[4]     = {PreHeatingTemp_Def, PreHeatingTemp_Def, PreHeat
 double  HeatingTemp_Max[4]    = {HeatingTemp_Max_Def, HeatingTemp_Max_Def, HeatingTemp_Max_Def, HeatingTemp_Max_Def};
 double  HeatingTemp_Min[4]    = {HeatingTemp_Min_Def, HeatingTemp_Min_Def, HeatingTemp_Min_Def, HeatingTemp_Min_Def};
 
-#define MaxTemp               135   //過熱關閉加熱器溫度
+#define MaxTemp               135
 #define Heating_beg_tag       (-1)
 #define Heating_fin_tag       (-2)
 
@@ -159,18 +160,15 @@ bool  button[4] = {false, false, false, false};
 int   button_disable_counter[4] = {0, 0, 0, 0};
 
 //LED-----------------------
-#define LED_EnableTimes     15
-#define LED_CycleSec        (60 * SecCycles)
-#define LED_OnSec           (5 * SecCycles)
+#define LED_MaskSec         120
+#define LED_CycleSec        60
+#define LED_OnSec           5
 
-int   LED_SecCounter[4] = {LED_CycleSec, LED_CycleSec, LED_CycleSec, LED_CycleSec};
-int   LED_CycleCounter[4] = {LED_EnableTimes, LED_EnableTimes, LED_EnableTimes, LED_EnableTimes};
+int   LED_MaskSec_array[4] = {LED_MaskSec, LED_MaskSec, LED_MaskSec, LED_MaskSec};
+int   LED_CycleSec_array[4] = {LED_CycleSec, LED_CycleSec, LED_CycleSec, LED_CycleSec};
+int   LED_OnSec_array[4] = {LED_OnSec, LED_OnSec, LED_OnSec, LED_OnSec};
 bool  LEDonoff[4] = {false, false, false, false};
-bool  LEDEanbleType[LED_EnableTimes + 1] = {false, false, true, true, true,
-                                            true, true, true, true, true,
-                                            true, true, true, true, true, false
-                                           };
-#define LED_MaskSec         (120 * SecCycles)
+
 CubeLed CL0, CL1, CL2, CL3;
 
 //SPI_ADC--------------------
@@ -206,8 +204,8 @@ double PD_Cons[4] = {PD_Cons_0, PD_Cons_1, PD_Cons_2, PD_Cons_3};
 #define Dis_PlotImg_Name      GENIE_OBJ_SCOPE
 
 #define Dis_ADCcon_Def        2000
-#define Dis_pA_Gate_Def       300
-#define Dis_pB_Gate_Def       300
+#define Dis_pA_Gate_Def       150
+#define Dis_pB_Gate_Def       150
 Genie genie;
 
 double  Dis_plot_Gate[2] = {Dis_pA_Gate_Def, Dis_pB_Gate_Def};
@@ -233,6 +231,7 @@ bool    Dis_plot_base_enable = true;
 bool    Display_Module = false;
 
 //EEPROM---------------------
+#define EEPROM_readdef_eable    false
 #define Size_Double             sizeof(double)
 
 #define EEPROM_WriteInByte      0xFF
@@ -276,25 +275,25 @@ bool    Display_Module = false;
 #define Dis_plot_Gate_A_addr    0x0800
 #define Dis_plot_Gate_B_addr    Dis_plot_Gate_A_addr + Size_Double
 
-int HeatingTime_addr[4]     = {HeatingTime_0_addr, HeatingTime_1_addr, HeatingTime_2_addr, HeatingTime_3_addr};
-int ResponseTime_addr[4]    = {ResponseTime_0_addr, ResponseTime_1_addr, ResponseTime_2_addr, ResponseTime_3_addr};
-int PreHeatingTemp_addr[4]  = {PreHeatingTemp_0_addr, PreHeatingTemp_1_addr, PreHeatingTemp_2_addr, PreHeatingTemp_3_addr};
-int HeatingTemp_Max_addr[4] = {HeatingTemp_Max_0_addr, HeatingTemp_Max_1_addr, HeatingTemp_Max_2_addr, HeatingTemp_Max_3_addr};
-int HeatingTemp_Min_addr[4] = {HeatingTemp_Min_0_addr, HeatingTemp_Min_1_addr, HeatingTemp_Min_2_addr, HeatingTemp_Min_3_addr};
-int Temp_diff_addr[4]       = {Temp_diff_0_addr, Temp_diff_1_addr, Temp_diff_2_addr, Temp_diff_3_addr};
-int PD_Cons_addr[4]         = {PD_Cons_0_addr, PD_Cons_1_addr, PD_Cons_2_addr, PD_Cons_3_addr};
-int Dis_plot_Gate_addr[2]   = {Dis_plot_Gate_A_addr, Dis_plot_Gate_B_addr};
+unsigned int HeatingTime_addr[4]     = {HeatingTime_0_addr, HeatingTime_1_addr, HeatingTime_2_addr, HeatingTime_3_addr};
+unsigned int ResponseTime_addr[4]    = {ResponseTime_0_addr, ResponseTime_1_addr, ResponseTime_2_addr, ResponseTime_3_addr};
+unsigned int PreHeatingTemp_addr[4]  = {PreHeatingTemp_0_addr, PreHeatingTemp_1_addr, PreHeatingTemp_2_addr, PreHeatingTemp_3_addr};
+unsigned int HeatingTemp_Max_addr[4] = {HeatingTemp_Max_0_addr, HeatingTemp_Max_1_addr, HeatingTemp_Max_2_addr, HeatingTemp_Max_3_addr};
+unsigned int HeatingTemp_Min_addr[4] = {HeatingTemp_Min_0_addr, HeatingTemp_Min_1_addr, HeatingTemp_Min_2_addr, HeatingTemp_Min_3_addr};
+unsigned int Temp_diff_addr[4]       = {Temp_diff_0_addr, Temp_diff_1_addr, Temp_diff_2_addr, Temp_diff_3_addr};
+unsigned int PD_Cons_addr[4]         = {PD_Cons_0_addr, PD_Cons_1_addr, PD_Cons_2_addr, PD_Cons_3_addr};
+unsigned int Dis_plot_Gate_addr[2]   = {Dis_plot_Gate_A_addr, Dis_plot_Gate_B_addr};
 
 #define EEPROM_itemnum      30
-int EEPROM_addr[EEPROM_itemnum] = {
-  HeatingTime_addr[0],       HeatingTime_addr[1],      HeatingTime_addr[2],      HeatingTime_addr[3],
-  ResponseTime_addr[0],      ResponseTime_addr[1],     ResponseTime_addr[2],     ResponseTime_addr[3],
-  PreHeatingTemp_addr[0],    PreHeatingTemp_addr[1],   PreHeatingTemp_addr[2],   PreHeatingTemp_addr[3],
-  HeatingTemp_Max_addr[0],   HeatingTemp_Max_addr[1],  HeatingTemp_Max_addr[2],  HeatingTemp_Max_addr[3],
-  HeatingTemp_Min_addr[0],   HeatingTemp_Min_addr[1],  HeatingTemp_Min_addr[2],  HeatingTemp_Min_addr[3],
-  Temp_diff_addr[0],         Temp_diff_addr[1],        Temp_diff_addr[2],        Temp_diff_addr[3],
-  PD_Cons_addr[0],           PD_Cons_addr[1],          PD_Cons_addr[2],          PD_Cons_addr[3],
-  Dis_plot_Gate_addr[0],      Dis_plot_Gate_addr[1]
+unsigned int EEPROM_addr[EEPROM_itemnum] = {
+  HeatingTime_0_addr,       HeatingTime_1_addr,      HeatingTime_2_addr,      HeatingTime_3_addr,
+  ResponseTime_0_addr,      ResponseTime_1_addr,     ResponseTime_2_addr,     ResponseTime_3_addr,
+  PreHeatingTemp_0_addr,    PreHeatingTemp_1_addr,   PreHeatingTemp_2_addr,   PreHeatingTemp_3_addr,
+  HeatingTemp_Max_0_addr,   HeatingTemp_Max_1_addr,  HeatingTemp_Max_2_addr,  HeatingTemp_Max_3_addr,
+  HeatingTemp_Min_0_addr,   HeatingTemp_Min_1_addr,  HeatingTemp_Min_2_addr,  HeatingTemp_Min_3_addr,
+  Temp_diff_0_addr,         Temp_diff_1_addr,        Temp_diff_2_addr,        Temp_diff_3_addr,
+  PD_Cons_0_addr,           PD_Cons_1_addr,          PD_Cons_2_addr,          PD_Cons_3_addr,
+  Dis_plot_Gate_A_addr,     Dis_plot_Gate_B_addr
 };
 
 //Save data--------------------
@@ -308,9 +307,10 @@ bool Save_cardin = false;
 
 void setup() {
   // put your setup code here, to run once:
+  delay(1000);
   EEPROM_setup();
-  Serial_setup();
   Fan_setup();
+  Serial_setup();
   TempIC_setup();
   Buzzer_setup();
   Button_setup();

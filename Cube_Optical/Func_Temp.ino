@@ -19,7 +19,10 @@ double Temp_avg(int num) {
     Min = min(Min, buff);
     temp += buff;
   }
-  temp = (temp - Max - Min) / (TempSampleTimes - 2);
+  if (TempSampleTimes > 2)
+    temp = (temp - Max - Min) / (TempSampleTimes - 2);
+  else
+    temp = temp / TempSampleTimes;
   return (temp + Temp_diff[num]);
 }
 

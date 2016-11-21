@@ -16,8 +16,7 @@ void Display_Reset() {
   delay(3500);
 }
 
-void Display_CheckModule() {
-  pinMode(Dis_Module, INPUT);
+void Display_CheckModule() {  
   Display_Module = digitalRead(Dis_Module);
   if (Display_Module)
     Serial_Log.println("Display Moudle: True");
@@ -155,12 +154,16 @@ void Display_PlotImg(int num, bool reset) {
           genie.WriteObject(Dis_PlotImg_Name, (num), 0);
         }
       }
-      Dis_plot_zero[num * 2] = 0;
-      Dis_plot_zero[num * 2 + 1] = 0;
       Dis_data_avg[num * 2] = 0;
       Dis_data_avg[num * 2 + 1] = 0;
       Dis_data_num[num * 2] = 0;
       Dis_data_num[num * 2 + 1] = 0;
+      Dis_plot_zero[num * 2] = 0;
+      Dis_plot_zero[num * 2 + 1] = 0;
+      Dis_plot_num[num * 2] = 0;
+      Dis_plot_num[num * 2 + 1] = 0;
+      Dis_plot_end[num * 2] = 0;
+      Dis_plot_end[num * 2 + 1] = 0;
     }
   }
 }
