@@ -4,7 +4,6 @@ void Display_setup() {
   if (Display_Module) {
     Display_Reset();
     genie.Begin(Serial_Dis);
-    genie.AttachEventHandler(Display_myGenieEventHandler);
     genie.WriteContrast(15);
   }
 }
@@ -53,57 +52,26 @@ void Display_ReadyLED(int num) {
 
 void Display_ResultImg(int num, bool reset) {
   if (Display_Module) {
-    int DA, DB;
     int RA = 0, RB = 0;
-    DA = Dis_plot_end[num * 2];
-    DB = Dis_plot_end[num * 2 + 1];
-    DB = int(double(DB) - double(DA) * PD_Cons[num]);
-    if (DA == 0)
-      DA = 1;
-    double Dab = double(DB) / double(DA);
-
+    if (Dis_plot_end[num * 2] == 0)
+      Dis_plot_end[num * 2] = 1;
+    double Dab = double(Dis_plot_end[num * 2 + 1]) / double(Dis_plot_end[num * 2]);
     if (reset == false) {
-      //      if (Dis_plot_end[num * 2] < Dis_plot_Gate[0] || Dis_plot_end[num * 2 + 1] < Dis_plot_Gate[1]) {
-      //        RA = Dis_ResultImg_Nega;
-      //        RB = Dis_ResultImg_Nega;
-      //      }
-      //      else if (Dab >= Dis_Ratio_Max) {
-      //        RA = Dis_ResultImg_Nega;
-      //        RB = Dis_ResultImg_Posi;
-      //      }
-      //      else if (Dab < Dis_Ratio_Max && Dab >= Dis_Ratio_Min) {
-      //        RA = Dis_ResultImg_Posi;
-      //        RB = Dis_ResultImg_Posi;
-      //      }
-      //      else if (Dab < Dis_Ratio_Min) {
-      //        RA = Dis_ResultImg_Posi;
-      //        RB = Dis_ResultImg_Nega;
-      //      }
-      if (DA < Dis_plot_Gate[0] && DB < Dis_plot_Gate[1]) {
+      if (Dis_plot_end[num * 2] < Dis_plot_Gate[0] || Dis_plot_end[num * 2 + 1] < Dis_plot_Gate[1]) {
         RA = Dis_ResultImg_Nega;
         RB = Dis_ResultImg_Nega;
       }
-      else if (DA < Dis_plot_Gate[0] && DB >= Dis_plot_Gate[1]) {
+      else if (Dab >= Dis_pA_Ratio_Max) {
         RA = Dis_ResultImg_Nega;
         RB = Dis_ResultImg_Posi;
       }
-      else if (DA >= Dis_plot_Gate[0] && DB < Dis_plot_Gate[1]) {
+      else if (Dab < Dis_pA_Ratio_Max && Dab >= Dis_pA_Ratio_Min) {
+        RA = Dis_ResultImg_Posi;
+        RB = Dis_ResultImg_Posi;
+      }
+      else if (Dab < Dis_pA_Ratio_Min) {
         RA = Dis_ResultImg_Posi;
         RB = Dis_ResultImg_Nega;
-      }
-      else if (DA >= Dis_plot_Gate[0] && DB >= Dis_plot_Gate[1]) {
-        if (Dab >= Dis_Ratio_Max) {
-          RA = Dis_ResultImg_Nega;
-          RB = Dis_ResultImg_Posi;
-        }
-        else if (Dab < Dis_Ratio_Max && Dab >= Dis_Ratio_Min) {
-          RA = Dis_ResultImg_Posi;
-          RB = Dis_ResultImg_Posi;
-        }
-        else if (Dab < Dis_Ratio_Min) {
-          RA = Dis_ResultImg_Posi;
-          RB = Dis_ResultImg_Nega;
-        }
       }
     }
 
@@ -123,7 +91,7 @@ void Display_ConstDig(int num) {
     genie.WriteObject(Dis_ConstDig_Name, (num * 3), Tar[num]);
     genie.WriteObject(Dis_ConstDig_Name, (num * 3 + 1), Temp_diff[num] * 10);
     genie.WriteObject(Dis_ConstDig_Name, (num * 3 + 2), PD_Cons[num] * 10);
-    genie.WriteObject(Dis_ConstDig_Name, (num + 12), int(HeatingTime_Counter[num] / 10));
+    //genie.WriteObject(Dis_ConstDig_Name, (num + 12), int(HeatingTime_Counter[num] / 10));
   }
 }
 
@@ -131,7 +99,7 @@ void Display_PlotImg(int num, bool reset) {
   if (Display_Module) {
     if (button[num] == true && reset == false) {
       if (LED_onoff[num] == true) {
-        if (Dis_data_num[num] == 0) {
+        if (Dis_data_num[num * 2] == 0) {
           Dis_data_base_avg[num * 2] = 0;
           Dis_data_base_avg[num * 2 + 1] = 0;
           if (Dis_plot_base_enable) {
@@ -141,54 +109,50 @@ void Display_PlotImg(int num, bool reset) {
             }
           }
         }
-        else if (Dis_data_num[num] >= 20 && Dis_data_num[num] < 40) {
-          Dis_data_avg[num * 2] += double(SPI_ADCdata[num * 2]) / 20;
-          Dis_data_avg[num * 2 + 1] += double(SPI_ADCdata[num * 2 + 1]) / 20;
+        else if (Dis_data_num[num * 2] >= 20 && Dis_data_num[num * 2] < 40) {
+          Dis_data_avg[num * 2] += SPI_ADCdata[num * 2] / 20;
+          Dis_data_avg[num * 2 + 1] += SPI_ADCdata[num * 2 + 1] / 20;
         }
-        else if (Dis_data_num[num] == 40) {
+        else if (Dis_data_num[num * 2] == 40) {
           if (Dis_plot_num[num] == 0) {
             Dis_plot_zero[num * 2] = Dis_data_avg[num * 2] - Dis_data_base_avg[num * 2];
             Dis_plot_zero[num * 2 + 1] = Dis_data_avg[num * 2 + 1] - Dis_data_base_avg[num * 2 + 1];
+            Dis_plot_min[num * 2] = Dis_plot_zero[num * 2];
+            Dis_plot_min[num * 2 + 1] = Dis_plot_zero[num * 2 + 1];
           }
 
           int dA = Dis_data_avg[num * 2] - Dis_data_base_avg[num * 2] - Dis_plot_zero[num * 2];
           int dB = Dis_data_avg[num * 2 + 1] - Dis_data_base_avg[num * 2 + 1] - Dis_plot_zero[num * 2 + 1];
+          double dB2 = double(dB) - double(dA*PD_Cons[num]);
+          
+          Dis_plot_min[num * 2] = min(Dis_plot_min[num * 2],  dA);
+          Dis_plot_min[num * 2 + 1] = min(Dis_plot_min[num * 2 + 1],  dB);
 
           int pA = double(dA) * 150 / Dis_ADCcon_Def;
-          int pB = double(dB) * 150 / Dis_ADCcon_Def;
-          
+          int pB = dB2 * 150 / Dis_ADCcon_Def;
           for (int i = 0; i < 20; i++) {
             genie.WriteObject(Dis_PlotImg_Name, (num), pA);
             genie.WriteObject(Dis_PlotImg_Name, (num), pB);
           }
-//                    Serial_Log.println(Dis_data_avg[num * 2]);
-//                    Serial_Log.println(Dis_data_avg[num * 2 + 1]);
-//                    Serial_Log.println(Dis_data_base_avg[num * 2]);
-//                    Serial_Log.println(Dis_data_base_avg[num * 2 + 1]);
-//                    Serial_Log.println(Dis_plot_zero[num * 2]);
-//                    Serial_Log.println(Dis_plot_zero[num * 2 + 1]);
-//                    Serial_Log.println(dA);
-//                    Serial_Log.println(dB);
-//                    Serial_Log.println(pA);
-//                    Serial_Log.println(pB);
-//                    Serial_Log.println(Dis_plot_num[num]);
-//                    Serial_Log.println("----------------------");
-
+          //          Serial_Log.println(Dis_data_avg[num * 2]);
+          //          Serial_Log.println(Dis_data_avg[num * 2 + 1]);
+          //          Serial_Log.println(dA);
+          //          Serial_Log.println(dB);
+          //          Serial_Log.println(pA);
+          //          Serial_Log.println(pB);
           Dis_plot_end[num * 2] = dA;
-          Dis_plot_end[num * 2 + 1] = dB;
-
-          Dis_plot_draw[num * 2] = pA;
-          Dis_plot_draw[num * 2 + 1] = pB;
+          Dis_plot_end[num * 2 + 1] = int(dB2);
 
           Dis_data_avg[num * 2] = 0;
           Dis_data_avg[num * 2 + 1] = 0;
-          
           Dis_plot_num[num]++;
         }
-        Dis_data_num[num]++;
+        Dis_data_num[num * 2]++;
+        Dis_data_num[num * 2 + 1]++;
       }
       else {
-        Dis_data_num[num] = 0;
+        Dis_data_num[num * 2] = 0;
+        Dis_data_num[num * 2 + 1] = 0;
 
         for (int i = 8; i >= 0; i--) {
           Dis_data_base[num * 2][i + 1] = Dis_data_base[num * 2][i];
@@ -207,37 +171,18 @@ void Display_PlotImg(int num, bool reset) {
       }
       Dis_data_avg[num * 2] = 0;
       Dis_data_avg[num * 2 + 1] = 0;
-      
+      Dis_data_num[num * 2] = 0;
+      Dis_data_num[num * 2 + 1] = 0;
       Dis_plot_zero[num * 2] = 0;
       Dis_plot_zero[num * 2 + 1] = 0;
-      
+      Dis_plot_num[num * 2] = 0;
+      Dis_plot_num[num * 2 + 1] = 0;
       Dis_plot_end[num * 2] = 0;
       Dis_plot_end[num * 2 + 1] = 0;
-
-      Dis_data_num[num] = 0;
-      Dis_plot_num[num] = 0;
     }
   }
 }
 
 void Dis_LEDtrigger(int num) {
-  genie.ReadObject(Dis_LEDtrigger_Name, num);
-}
-
-void Display_myGenieEventHandler(void)
-{
-  genieFrame Event;
-  genie.DequeueEvent(&Event); // Remove the next queued event from the buffer, and process it below
-
-  //If the cmd received is from a Reported Event (Events triggered from the Events tab of Workshop4 objects)
-  if (Event.reportObject.cmd == GENIE_REPORT_EVENT) {
-  }
-
-  //If the cmd received is from a Reported Object, which occurs if a Read Object (genie.ReadOject) is requested in the main code, reply processed here.
-  if (Event.reportObject.cmd == GENIE_REPORT_OBJ) {
-    if (Event.reportObject.object == Dis_LEDtrigger_Name) {
-      int num = Event.reportObject.index;
-      LED_TurnOn[num] = genie.GetEventData(&Event);
-    }
-  }
+  LED_TurnOn[num] = genie.ReadObject(Dis_LEDtrigger_Name, num);
 }

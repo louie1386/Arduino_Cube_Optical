@@ -145,7 +145,7 @@ void SaveData_WriteIn(int num, String str) {
 }
 
 void SaveData_WriteIn_Title(int num) {
-  String title = "Time,Plot A,Plot B, LED, Temperature, Well Check, Draw A, Draw B\r\n";
+  String title = "Time,Plot A,Plot B, LED, Temperature, Well Check\r\n";
   SaveData_WriteIn(num, title);
 }
 
@@ -157,18 +157,14 @@ void SaveData_WriteIn_Data(int num) {
     String LED = String(digitalRead(LED_pin[num]));
     String tr = String(Temp[num]);
     String wn = String(num + 1);
-    String PlotA = String(Dis_plot_draw[num * 2]);
-    String PlotB = String(Dis_plot_draw[num * 2 + 1]);
 
     String str =
       Time + String(", ") +
       pA + String(", ") +
       pB + String(", ") +
       LED + String(", ") +
-      tr + String(", ") +
-      wn + String(", ") +
-      PlotA + String(", ") +
-      PlotB + String("\r\n");
+      tr  + String(", ") +
+      wn + String("\r\n");
     SaveData_WriteIn(num, str);
   }
 }

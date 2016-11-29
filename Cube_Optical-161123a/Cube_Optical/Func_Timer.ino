@@ -16,7 +16,7 @@ void Timer_CTR() {
       Display_ReadyLED(i);
       Display_RealTempDig(i);
       Display_ConstDig(i);
-      Dis_LEDtrigger(i);
+      //Dis_LEDtrigger(i);
     }
     Cycles = 0;
   }

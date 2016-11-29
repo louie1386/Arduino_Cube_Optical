@@ -16,10 +16,9 @@
     1.04      修正溫度讀取, SD card與EEPROM bug
     1.05      修改LED控制為動態設定
     1.06      新增待機溫度與強制開燈變數
-    1.07      新增4Dsystem 倒數計時顯示
 */
-#define Version         "1.07."
-#define subVersion      "11.29.02"
+#define Version         "1.06."
+#define subVersion      "11.23.07"
 
 //Pin define-----------------
 //Analog Pin
@@ -76,10 +75,10 @@ Timer timer;
 int Cycles = 0;
 
 //Temp-----------------------
-#define TempIC_Diff_0   10
-#define TempIC_Diff_1   11
-#define TempIC_Diff_2   9
-#define TempIC_Diff_3   8
+#define TempIC_Diff_0   7
+#define TempIC_Diff_1   8
+#define TempIC_Diff_2   8
+#define TempIC_Diff_3   7
 
 #define TempIC_base     400
 #define TempIC_reso     19.5
@@ -138,7 +137,7 @@ PID PID3(&Temp[3], &Volt[3], &Tar[3], Kp[3], Ki[3], Kd[3], DIRECT);
 #define ResponseTime_Def      HeatingTime_Def - PreHeatingTime_Def
 
 #define PreHeatingTemp_Def    120   //預熱溫度
-#define StandbyTemp_Def       80    //待機溫度
+#define StandbyTemp_Def       120   //待機溫度
 #define HeatingTemp_Max_Def   103   //PCR反應溫度
 #define HeatingTemp_Min_Def   103   //PCR反應溫度
 
@@ -212,21 +211,23 @@ double PD_Cons[4] = {PD_Cons_0, PD_Cons_1, PD_Cons_2, PD_Cons_3};
 
 #define Dis_ReadyLed_On       1
 #define Dis_ReadyLed_Off      0
+
 #define Dis_ResultImg_Posi    1
 #define Dis_ResultImg_Nega    2
 
 #define Dis_pA_Gate_Def       150
 #define Dis_pB_Gate_Def       150
-#define Dis_Ratio_Max         1.5
-#define Dis_Ratio_Min         0.5
+
+#define Dis_pA_Ratio_Max      1.5
+#define Dis_pA_Ratio_Min      0.5
 
 Genie genie;
 
 double  Dis_plot_Gate[2] = {Dis_pA_Gate_Def, Dis_pB_Gate_Def};
 
 double  Dis_data_avg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-int     Dis_data_num[4] = {0, 0, 0, 0};
-int     Dis_plot_num[4] = {0, 0, 0, 0};
+int     Dis_data_num[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+int     Dis_plot_num[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 int     Dis_plot_zero[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 int     Dis_plot_end[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 int     Dis_data_base[8][10] = {
@@ -240,9 +241,9 @@ int     Dis_data_base[8][10] = {
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 };
 int     Dis_data_base_avg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+int     Dis_plot_min[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 bool    Dis_plot_base_enable = true;
 bool    Display_Module = false;
-int     Dis_plot_draw[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
 //EEPROM---------------------
 #define EEPROM_readdef_eable    false
@@ -341,6 +342,5 @@ void loop() {
   // put your main code here, to run repeatedly:
   timer.update();
   PID_Loop();
-  genie.DoEvents();
   wdt_reset();
 }
