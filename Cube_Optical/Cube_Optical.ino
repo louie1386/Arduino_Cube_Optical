@@ -19,11 +19,10 @@
     1.07      新增4Dsystem 倒數計時顯示
 */
 #define Version         "1.07."
-#define subVersion      "11.29.02"
+#define subVersion      "12.01.02"
 
 //Pin define-----------------
 //Analog Pin
-#define TIC0            A0  //PF0, P97
 #define TIC1            A1  //PF1, P96
 #define TIC2            A2  //PF2, P95
 #define TIC3            A3  //PF3, P94
@@ -58,6 +57,7 @@
 //MOSI  51
 //SCK   52
 #define  SSPin          53  //PB0, P19
+#define TIC0            A0  //PF0, P97
 
 #define  Dis_Module     19  //RX1
 #define  SD_Module      17  //RX2
@@ -76,10 +76,10 @@ Timer timer;
 int Cycles = 0;
 
 //Temp-----------------------
-#define TempIC_Diff_0   10
-#define TempIC_Diff_1   11
-#define TempIC_Diff_2   9
-#define TempIC_Diff_3   8
+#define TempIC_Diff_0   13
+#define TempIC_Diff_1   15
+#define TempIC_Diff_2   14
+#define TempIC_Diff_3   12
 
 #define TempIC_base     400
 #define TempIC_reso     19.5
@@ -117,20 +117,17 @@ double   LogEEPROM_data = 0;
 #define PIDSampleTime   100
 #define PIDOutputLimit  255
 
-#define dKp   200
-#define dKi   20
-#define dKd   0
+#define dKp   60
+#define dKi   0
+#define dKd   30
 
 double  Volt[4] = {0, 0, 0, 0};
-double  Kp[4] =   {dKp, dKp, dKp, dKp};
-double  Ki[4] =   {dKi, dKi, dKi, dKi};
-double  Kd[4] =   {dKd, dKd, dKd, dKd};
 int     PIDnum = 0;
 
-PID PID0(&Temp[0], &Volt[0], &Tar[0], Kp[0], Ki[0], Kd[0], DIRECT);
-PID PID1(&Temp[1], &Volt[1], &Tar[1], Kp[1], Ki[1], Kd[1], DIRECT);
-PID PID2(&Temp[2], &Volt[2], &Tar[2], Kp[2], Ki[2], Kd[2], DIRECT);
-PID PID3(&Temp[3], &Volt[3], &Tar[3], Kp[3], Ki[3], Kd[3], DIRECT);
+PID PID0(&Temp[0], &Volt[0], &Tar[0], dKp, dKi, dKd, DIRECT);
+PID PID1(&Temp[1], &Volt[1], &Tar[1], dKp, dKi, dKd, DIRECT);
+PID PID2(&Temp[2], &Volt[2], &Tar[2], dKp, dKi, dKd, DIRECT);
+PID PID3(&Temp[3], &Volt[3], &Tar[3], dKp, dKi, dKd, DIRECT);
 
 //Heater--------------------
 #define HeatingTime_Def       720   //PCR反應時間(含預熱時間)
@@ -138,9 +135,9 @@ PID PID3(&Temp[3], &Volt[3], &Tar[3], Kp[3], Ki[3], Kd[3], DIRECT);
 #define ResponseTime_Def      HeatingTime_Def - PreHeatingTime_Def
 
 #define PreHeatingTemp_Def    120   //預熱溫度
-#define StandbyTemp_Def       80    //待機溫度
-#define HeatingTemp_Max_Def   103   //PCR反應溫度
-#define HeatingTemp_Min_Def   103   //PCR反應溫度
+#define StandbyTemp_Def       30    //待機溫度
+#define HeatingTemp_Max_Def   106   //PCR反應溫度
+#define HeatingTemp_Min_Def   106   //PCR反應溫度
 
 double  HeatingTime[4]        = {HeatingTime_Def, HeatingTime_Def, HeatingTime_Def, HeatingTime_Def};
 double  ResponseTime[4]       = {ResponseTime_Def, ResponseTime_Def, ResponseTime_Def, ResponseTime_Def};
@@ -190,10 +187,10 @@ CubeLed CL0, CL1, CL2, CL3;
 #define  RangeSelectBits    B0110
 #define  ConvStartBits      B0000
 
-#define  PD_Cons_0          0.47
-#define  PD_Cons_1          0.49
-#define  PD_Cons_2          0.32
-#define  PD_Cons_3          0.45
+#define  PD_Cons_0          0.48
+#define  PD_Cons_1          0.43
+#define  PD_Cons_2          0.37
+#define  PD_Cons_3          0.40
 
 int ChannelPin[8] = {Well_0_A, Well_0_B, Well_1_A, Well_1_B, Well_2_A, Well_2_B, Well_3_A, Well_3_B};
 unsigned int SPI_ADCdata[8];

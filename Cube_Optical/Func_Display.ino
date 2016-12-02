@@ -57,28 +57,12 @@ void Display_ResultImg(int num, bool reset) {
     int RA = 0, RB = 0;
     DA = Dis_plot_end[num * 2];
     DB = Dis_plot_end[num * 2 + 1];
-    DB = int(double(DB) - double(DA) * PD_Cons[num]);
+    
     if (DA == 0)
       DA = 1;
     double Dab = double(DB) / double(DA);
 
     if (reset == false) {
-      //      if (Dis_plot_end[num * 2] < Dis_plot_Gate[0] || Dis_plot_end[num * 2 + 1] < Dis_plot_Gate[1]) {
-      //        RA = Dis_ResultImg_Nega;
-      //        RB = Dis_ResultImg_Nega;
-      //      }
-      //      else if (Dab >= Dis_Ratio_Max) {
-      //        RA = Dis_ResultImg_Nega;
-      //        RB = Dis_ResultImg_Posi;
-      //      }
-      //      else if (Dab < Dis_Ratio_Max && Dab >= Dis_Ratio_Min) {
-      //        RA = Dis_ResultImg_Posi;
-      //        RB = Dis_ResultImg_Posi;
-      //      }
-      //      else if (Dab < Dis_Ratio_Min) {
-      //        RA = Dis_ResultImg_Posi;
-      //        RB = Dis_ResultImg_Nega;
-      //      }
       if (DA < Dis_plot_Gate[0] && DB < Dis_plot_Gate[1]) {
         RA = Dis_ResultImg_Nega;
         RB = Dis_ResultImg_Nega;
@@ -153,26 +137,26 @@ void Display_PlotImg(int num, bool reset) {
 
           int dA = Dis_data_avg[num * 2] - Dis_data_base_avg[num * 2] - Dis_plot_zero[num * 2];
           int dB = Dis_data_avg[num * 2 + 1] - Dis_data_base_avg[num * 2 + 1] - Dis_plot_zero[num * 2 + 1];
-
+          dB = int(double(dB) - double(dA) * PD_Cons[num]);
           int pA = double(dA) * 150 / Dis_ADCcon_Def;
           int pB = double(dB) * 150 / Dis_ADCcon_Def;
-          
+
           for (int i = 0; i < 20; i++) {
             genie.WriteObject(Dis_PlotImg_Name, (num), pA);
             genie.WriteObject(Dis_PlotImg_Name, (num), pB);
           }
-//                    Serial_Log.println(Dis_data_avg[num * 2]);
-//                    Serial_Log.println(Dis_data_avg[num * 2 + 1]);
-//                    Serial_Log.println(Dis_data_base_avg[num * 2]);
-//                    Serial_Log.println(Dis_data_base_avg[num * 2 + 1]);
-//                    Serial_Log.println(Dis_plot_zero[num * 2]);
-//                    Serial_Log.println(Dis_plot_zero[num * 2 + 1]);
-//                    Serial_Log.println(dA);
-//                    Serial_Log.println(dB);
-//                    Serial_Log.println(pA);
-//                    Serial_Log.println(pB);
-//                    Serial_Log.println(Dis_plot_num[num]);
-//                    Serial_Log.println("----------------------");
+          //                    Serial_Log.println(Dis_data_avg[num * 2]);
+          //                    Serial_Log.println(Dis_data_avg[num * 2 + 1]);
+          //                    Serial_Log.println(Dis_data_base_avg[num * 2]);
+          //                    Serial_Log.println(Dis_data_base_avg[num * 2 + 1]);
+          //                    Serial_Log.println(Dis_plot_zero[num * 2]);
+          //                    Serial_Log.println(Dis_plot_zero[num * 2 + 1]);
+          //                    Serial_Log.println(dA);
+          //                    Serial_Log.println(dB);
+          //                    Serial_Log.println(pA);
+          //                    Serial_Log.println(pB);
+          //                    Serial_Log.println(Dis_plot_num[num]);
+          //                    Serial_Log.println("----------------------");
 
           Dis_plot_end[num * 2] = dA;
           Dis_plot_end[num * 2 + 1] = dB;
@@ -182,7 +166,7 @@ void Display_PlotImg(int num, bool reset) {
 
           Dis_data_avg[num * 2] = 0;
           Dis_data_avg[num * 2 + 1] = 0;
-          
+
           Dis_plot_num[num]++;
         }
         Dis_data_num[num]++;
@@ -207,10 +191,10 @@ void Display_PlotImg(int num, bool reset) {
       }
       Dis_data_avg[num * 2] = 0;
       Dis_data_avg[num * 2 + 1] = 0;
-      
+
       Dis_plot_zero[num * 2] = 0;
       Dis_plot_zero[num * 2 + 1] = 0;
-      
+
       Dis_plot_end[num * 2] = 0;
       Dis_plot_end[num * 2 + 1] = 0;
 
