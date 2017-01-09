@@ -1,4 +1,5 @@
 void SavaData_setup() {
+  wdt_reset();
   SavaData_CheckModule();
   SavaData_Reset();
   SavaData_CheckCard();
@@ -7,9 +8,9 @@ void SavaData_setup() {
 void SavaData_Reset() {
   pinMode(SavReset, OUTPUT);
   digitalWrite(SavReset, LOW);
-  delay(10);
+  delay(100);
   digitalWrite(SavReset, HIGH);
-  delay(10);
+  delay(100);
 
   Serial_Sav.begin(Baudrate_Sav_Def);
   fprot_init(SavaData_TXD, SavaData_RXD, SavaData_Delay);
@@ -19,6 +20,7 @@ void SavaData_Reset() {
 void SavaData_CheckModule() {
   pinMode(SD_Module, INPUT);
   Save_Module = digitalRead(SD_Module);
+//  Save_Module = false;
   if (Save_Module)
     Serial_Log.println("SD Moudle: True");
   else

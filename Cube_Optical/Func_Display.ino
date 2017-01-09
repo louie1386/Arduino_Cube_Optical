@@ -1,4 +1,5 @@
 void Display_setup() {
+  wdt_reset();
   Serial_Dis.begin(Baudrate_Dis);
   Display_CheckModule();
   if (Display_Module) {

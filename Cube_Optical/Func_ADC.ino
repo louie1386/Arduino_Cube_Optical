@@ -1,4 +1,5 @@
 void ADC_setup() {
+  wdt_reset();
   pinMode(SSPin, OUTPUT);
   ADC_disable();
   SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
