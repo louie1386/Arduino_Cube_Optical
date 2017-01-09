@@ -1,4 +1,5 @@
 void  HeatingTime_CounterRun(int num) {
+  wdt_reset();
   if (HeatingTime_Counter[num] == (ResponseTime[num] * SecCycles)) {
     Tar[num] = HeatingTemp_Min[num];
     Temp_steady[num] = Temp_check(num);

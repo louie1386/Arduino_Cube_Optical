@@ -1,12 +1,12 @@
 void  TempIC_setup() {
+  wdt_reset();
+  analogReference(DEFAULT);
   ADC3V3 = analogRead(AREF_3V3);
 }
 
 double TempIC_get(int pin) {
   double temp = 0;
   ADC3V3 = analogRead(AREF_3V3);
-  if (ADC3V3 < 600)
-    ADC3V3 = 600;
   temp = (double(analogRead(pin)) * 3300 / ADC3V3 - TempIC_base) / TempIC_reso;
   return temp;
 }

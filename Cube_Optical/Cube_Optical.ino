@@ -17,12 +17,14 @@
     1.05      修改LED控制為動態設定
     1.06      新增待機溫度與強制開燈變數
     1.07      新增4Dsystem 倒數計時顯示
+    1.08      新增4Dsystem 溫度設定顯示
 */
-#define Version         "1.07."
-#define subVersion      "12.01.02"
+#define Version         "1.08."
+#define subVersion      "12.14.01"//NO.2
 
 //Pin define-----------------
 //Analog Pin
+#define TIC0            A0  //PF0, P97
 #define TIC1            A1  //PF1, P96
 #define TIC2            A2  //PF2, P95
 #define TIC3            A3  //PF3, P94
@@ -57,7 +59,6 @@
 //MOSI  51
 //SCK   52
 #define  SSPin          53  //PB0, P19
-#define TIC0            A0  //PF0, P97
 
 #define  Dis_Module     19  //RX1
 #define  SD_Module      17  //RX2
@@ -76,10 +77,10 @@ Timer timer;
 int Cycles = 0;
 
 //Temp-----------------------
-#define TempIC_Diff_0   13
-#define TempIC_Diff_1   15
-#define TempIC_Diff_2   14
-#define TempIC_Diff_3   12
+#define TempIC_Diff_0   -9.1
+#define TempIC_Diff_1   -9.1
+#define TempIC_Diff_2   -11
+#define TempIC_Diff_3   -12
 
 #define TempIC_base     400
 #define TempIC_reso     19.5
@@ -117,9 +118,9 @@ double   LogEEPROM_data = 0;
 #define PIDSampleTime   100
 #define PIDOutputLimit  255
 
-#define dKp   60
+#define dKp   200
 #define dKi   0
-#define dKd   30
+#define dKd   0
 
 double  Volt[4] = {0, 0, 0, 0};
 int     PIDnum = 0;
@@ -130,14 +131,14 @@ PID PID2(&Temp[2], &Volt[2], &Tar[2], dKp, dKi, dKd, DIRECT);
 PID PID3(&Temp[3], &Volt[3], &Tar[3], dKp, dKi, dKd, DIRECT);
 
 //Heater--------------------
-#define HeatingTime_Def       720   //PCR反應時間(含預熱時間)
+#define HeatingTime_Def       900   //PCR反應時間(含預熱時間)
 #define PreHeatingTime_Def    60    //預熱時間
 #define ResponseTime_Def      HeatingTime_Def - PreHeatingTime_Def
 
-#define PreHeatingTemp_Def    120   //預熱溫度
-#define StandbyTemp_Def       30    //待機溫度
-#define HeatingTemp_Max_Def   106   //PCR反應溫度
-#define HeatingTemp_Min_Def   106   //PCR反應溫度
+#define PreHeatingTemp_Def    120    //預熱溫度
+#define StandbyTemp_Def       90    //待機溫度
+#define HeatingTemp_Max_Def   90   //PCR反應溫度
+#define HeatingTemp_Min_Def   90   //PCR反應溫度
 
 double  HeatingTime[4]        = {HeatingTime_Def, HeatingTime_Def, HeatingTime_Def, HeatingTime_Def};
 double  ResponseTime[4]       = {ResponseTime_Def, ResponseTime_Def, ResponseTime_Def, ResponseTime_Def};
@@ -187,39 +188,49 @@ CubeLed CL0, CL1, CL2, CL3;
 #define  RangeSelectBits    B0110
 #define  ConvStartBits      B0000
 
-#define  PD_Cons_0          0.48
-#define  PD_Cons_1          0.43
-#define  PD_Cons_2          0.37
-#define  PD_Cons_3          0.40
+#define  PD_Cons_0          0.54//0.48
+#define  PD_Cons_1          0.32//0.43
+#define  PD_Cons_2          0.53//0.37
+#define  PD_Cons_3          0.43//0.40
 
 int ChannelPin[8] = {Well_0_A, Well_0_B, Well_1_A, Well_1_B, Well_2_A, Well_2_B, Well_3_A, Well_3_B};
 unsigned int SPI_ADCdata[8];
 double PD_Cons[4] = {PD_Cons_0, PD_Cons_1, PD_Cons_2, PD_Cons_3};
 
 //Display---------------------
-#define Dis_ProgressBar_Name  GENIE_OBJ_GAUGE
-#define Dis_ReadyLed_Name     GENIE_OBJ_LED
-#define Dis_ResultImg_Name    GENIE_OBJ_USERIMAGES
-#define Dis_RealTempDig_Name  GENIE_OBJ_LED_DIGITS
-#define Dis_ConstDig_Name     GENIE_OBJ_CUSTOM_DIGITS
-#define Dis_PlotImg_Name      GENIE_OBJ_SCOPE
-#define Dis_LEDtrigger_Name   GENIE_OBJ_4DBUTTON
+#define Dis_OBJ_GAUGE           GENIE_OBJ_GAUGE
+#define Dis_OBJ_LED             GENIE_OBJ_LED
+#define Dis_OBJ_USERIMAGES      GENIE_OBJ_USERIMAGES
+#define Dis_OBJ_LED_DIGITS      GENIE_OBJ_LED_DIGITS
+#define Dis_OBJ_CUSTOM_DIGITS   GENIE_OBJ_CUSTOM_DIGITS
+#define Dis_OBJ_SCOPE           GENIE_OBJ_SCOPE
+#define Dis_OBJ_4DBUTTON        GENIE_OBJ_4DBUTTON
+
+#define Dis_Progressbar_Indexbase   8
+#define Dis_Status_Indexbase        12
+#define Dis_Tr_Indexbase            4
+#define Dis_Tr_new_Indexbase        16
 
 #define Dis_ADCcon_Def        2000
 
-#define Dis_ReadyLed_On       1
-#define Dis_ReadyLed_Off      0
+#define Dis_Status_PreHeater  0
+#define Dis_Status_Standby    1
+#define Dis_Status_Reaction1  2
+#define Dis_Status_Reaction2  3
+#define Dis_Status_Finish     4
+
 #define Dis_ResultImg_Posi    1
 #define Dis_ResultImg_Nega    2
 
-#define Dis_pA_Gate_Def       150
-#define Dis_pB_Gate_Def       150
-#define Dis_Ratio_Max         1.5
-#define Dis_Ratio_Min         0.5
+#define Dis_pA_Gate_Def       100
+#define Dis_pB_Gate_Def       100
+#define Dis_Ratio_Max         1.3
+#define Dis_Ratio_Min         0.32
 
 Genie genie;
 
 double  Dis_plot_Gate[2] = {Dis_pA_Gate_Def, Dis_pB_Gate_Def};
+double  Dis_plot_Ratio[2] = {Dis_Ratio_Max, Dis_Ratio_Min};
 
 double  Dis_data_avg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 int     Dis_data_num[4] = {0, 0, 0, 0};
@@ -318,12 +329,12 @@ bool Save_cardin = false;
 
 void setup() {
   // put your setup code here, to run once:
-  delay(1000);
+  wdt_enable(WDTO_4S);
+  Buzzer_setup();
   EEPROM_setup();
   Fan_setup();
   Serial_setup();
   TempIC_setup();
-  Buzzer_setup();
   Button_setup();
   LED_setup();
   PID_setup();
@@ -331,7 +342,6 @@ void setup() {
   SavaData_setup();
   Display_setup();
   Timer_setup();
-  wdt_enable(WDTO_4S);
 }
 
 void loop() {

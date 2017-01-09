@@ -1,4 +1,5 @@
 void EEPROM_setup() {
+  wdt_reset();
   Serial_Log.begin(Baudrate_Log);
   unsigned char WriteInByte;
   EEPROM.get(EEPROM_WriteIn_addr, WriteInByte);
@@ -104,7 +105,7 @@ void EEPROM_writeall() {
 void EEPROM_resetall() {
   double Temp_diff_t[4] = {TempIC_Diff_0, TempIC_Diff_1, TempIC_Diff_2, TempIC_Diff_3};
   double PD_Cons_t[4]   = {PD_Cons_0, PD_Cons_1, PD_Cons_2, PD_Cons_3};
-  double Dis_plot_Gate_t[2]   = {Dis_pA_Gate_Def, Dis_pB_Gate_Def};
+  double Dis_plot_Gate_t[2]  = {Dis_pA_Gate_Def, Dis_pB_Gate_Def};
   for (int i = 0; i < 4; i++) {
     HeatingTime[i] = HeatingTime_Def;
     ResponseTime[i] = ResponseTime_Def;

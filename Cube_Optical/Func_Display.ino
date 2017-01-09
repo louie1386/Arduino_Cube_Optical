@@ -1,4 +1,5 @@
 void Display_setup() {
+  wdt_reset();
   Serial_Dis.begin(Baudrate_Dis);
   Display_CheckModule();
   if (Display_Module) {
@@ -27,27 +28,36 @@ void Display_CheckModule() {
 
 void Display_Progressbar(int num) {
   if (Display_Module) {
-    int precent = 0;
+    int precent = 0, output = 0;
     if (HeatingTime_Counter[num] >= 0)
       precent = 100 - (HeatingTime_Counter[num] / SecCycles / HeatingTime[num] * 100);
-    else if (button[num] == true && HeatingTime_Counter[num] == Heating_fin_tag)
+    else if (HeatingTime_Counter[num] == Heating_fin_tag)
       precent = 100;
-    genie.WriteObject(Dis_ProgressBar_Name, num, precent);
+
+    output = precent / 10;
+    genie.WriteObject(Dis_OBJ_USERIMAGES, num + Dis_Progressbar_Indexbase, output);
   }
 }
 
-void Display_ReadyLED(int num) {
+void Display_Status(int num) {
   if (Display_Module) {
-    int Dis_ReadyLED = Dis_ReadyLed_Off;
-    if (button[num] == false) {
+    int Dis_Status = Dis_Status_PreHeater;
+    if (HeatingTime_Counter[num] == Heating_beg_tag) {
       if (Temp_steady[num] == true)
-        Dis_ReadyLED = Dis_ReadyLed_On;
+        Dis_Status = Dis_Status_Standby;
+      else
+        Dis_Status = Dis_Status_PreHeater;
     }
-    else {
-      if (HeatingTime_Counter[num] > 0)
-        Dis_ReadyLED = Dis_ReadyLed_On;
+    else if (HeatingTime_Counter[num] >= 0) {
+      if (HeatingTime_Counter[num]%2 == 0)
+        Dis_Status = Dis_Status_Reaction1;
+      else
+        Dis_Status = Dis_Status_Reaction2;
     }
-    genie.WriteObject(Dis_ReadyLed_Name, num, Dis_ReadyLED);
+    else if (HeatingTime_Counter[num] == Heating_fin_tag) {
+      Dis_Status = Dis_Status_Finish;
+    }
+    genie.WriteObject(Dis_OBJ_USERIMAGES, num + Dis_Status_Indexbase, Dis_Status);
   }
 }
 
@@ -57,7 +67,7 @@ void Display_ResultImg(int num, bool reset) {
     int RA = 0, RB = 0;
     DA = Dis_plot_end[num * 2];
     DB = Dis_plot_end[num * 2 + 1];
-    
+
     if (DA == 0)
       DA = 1;
     double Dab = double(DB) / double(DA);
@@ -76,44 +86,45 @@ void Display_ResultImg(int num, bool reset) {
         RB = Dis_ResultImg_Nega;
       }
       else if (DA >= Dis_plot_Gate[0] && DB >= Dis_plot_Gate[1]) {
-        if (Dab >= Dis_Ratio_Max) {
+        if (Dab >= Dis_plot_Ratio[0]) {
           RA = Dis_ResultImg_Nega;
           RB = Dis_ResultImg_Posi;
         }
-        else if (Dab < Dis_Ratio_Max && Dab >= Dis_Ratio_Min) {
+        else if (Dab < Dis_plot_Ratio[0] && Dab >= Dis_plot_Ratio[1]) {
           RA = Dis_ResultImg_Posi;
           RB = Dis_ResultImg_Posi;
         }
-        else if (Dab < Dis_Ratio_Min) {
+        else if (Dab < Dis_plot_Ratio[1]) {
           RA = Dis_ResultImg_Posi;
           RB = Dis_ResultImg_Nega;
         }
       }
     }
 
-    genie.WriteObject(Dis_ResultImg_Name, (num * 2), RA);
-    genie.WriteObject(Dis_ResultImg_Name, (num * 2 + 1), RB);
+    genie.WriteObject(Dis_OBJ_USERIMAGES, (num * 2), RA);
+    genie.WriteObject(Dis_OBJ_USERIMAGES, (num * 2 + 1), RB);
   }
 }
 
 void Display_RealTempDig(int num) {
   if (Display_Module) {
-    genie.WriteObject(Dis_RealTempDig_Name, num, Temp[num]);
+    genie.WriteObject(Dis_OBJ_LED_DIGITS, num, Temp[num]);
   }
 }
 
 void Display_ConstDig(int num) {
   if (Display_Module) {
-    genie.WriteObject(Dis_ConstDig_Name, (num * 3), Tar[num]);
-    genie.WriteObject(Dis_ConstDig_Name, (num * 3 + 1), Temp_diff[num] * 10);
-    genie.WriteObject(Dis_ConstDig_Name, (num * 3 + 2), PD_Cons[num] * 10);
-    genie.WriteObject(Dis_ConstDig_Name, (num + 12), int(HeatingTime_Counter[num] / 10));
+    genie.WriteObject(Dis_OBJ_CUSTOM_DIGITS, (num * 3), Tar[num]);
+    genie.WriteObject(Dis_OBJ_CUSTOM_DIGITS, (num * 3 + 1), Temp_diff[num] * 10);
+    genie.WriteObject(Dis_OBJ_CUSTOM_DIGITS, (num * 3 + 2), PD_Cons[num] * 10);
+    genie.WriteObject(Dis_OBJ_CUSTOM_DIGITS, (num + 12), int(HeatingTime_Counter[num] / 10));
+    genie.WriteObject(Dis_OBJ_LED_DIGITS, (num + Dis_Tr_Indexbase), HeatingTemp_Min[num]);
   }
 }
 
 void Display_PlotImg(int num, bool reset) {
   if (Display_Module) {
-    if (button[num] == true && reset == false) {
+    if (HeatingTime_Counter[num] >= 0 && reset == false) {
       if (LED_onoff[num] == true) {
         if (Dis_data_num[num] == 0) {
           Dis_data_base_avg[num * 2] = 0;
@@ -142,8 +153,8 @@ void Display_PlotImg(int num, bool reset) {
           int pB = double(dB) * 150 / Dis_ADCcon_Def;
 
           for (int i = 0; i < 20; i++) {
-            genie.WriteObject(Dis_PlotImg_Name, (num), pA);
-            genie.WriteObject(Dis_PlotImg_Name, (num), pB);
+            genie.WriteObject(Dis_OBJ_SCOPE, (num), pA);
+            genie.WriteObject(Dis_OBJ_SCOPE, (num), pB);
           }
           //                    Serial_Log.println(Dis_data_avg[num * 2]);
           //                    Serial_Log.println(Dis_data_avg[num * 2 + 1]);
@@ -185,8 +196,8 @@ void Display_PlotImg(int num, bool reset) {
     else {
       if (reset == true) {
         for (int i = 0; i < 260; i++) {
-          genie.WriteObject(Dis_PlotImg_Name, (num), 0);
-          genie.WriteObject(Dis_PlotImg_Name, (num), 0);
+          genie.WriteObject(Dis_OBJ_SCOPE, (num), 0);
+          genie.WriteObject(Dis_OBJ_SCOPE, (num), 0);
         }
       }
       Dis_data_avg[num * 2] = 0;
@@ -205,7 +216,16 @@ void Display_PlotImg(int num, bool reset) {
 }
 
 void Dis_LEDtrigger(int num) {
-  genie.ReadObject(Dis_LEDtrigger_Name, num);
+  genie.ReadObject(Dis_OBJ_4DBUTTON, num);
+}
+
+void Dis_Settrigger() {
+  genie.ReadObject(Dis_OBJ_4DBUTTON, 4);
+}
+
+void Dis_GetTtar() {
+  for (int i = 0; i < 4; i++)
+    genie.ReadObject(Dis_OBJ_CUSTOM_DIGITS, i + Dis_Tr_new_Indexbase);
 }
 
 void Display_myGenieEventHandler(void)
@@ -219,9 +239,28 @@ void Display_myGenieEventHandler(void)
 
   //If the cmd received is from a Reported Object, which occurs if a Read Object (genie.ReadOject) is requested in the main code, reply processed here.
   if (Event.reportObject.cmd == GENIE_REPORT_OBJ) {
-    if (Event.reportObject.object == Dis_LEDtrigger_Name) {
-      int num = Event.reportObject.index;
-      LED_TurnOn[num] = genie.GetEventData(&Event);
+    if (Event.reportObject.object == Dis_OBJ_4DBUTTON) {
+      int index = Event.reportObject.index;
+      int ret = genie.GetEventData(&Event);
+      if (index < 4)
+        LED_TurnOn[index] = ret;
+      else if (index == 4 && ret == true)
+        Dis_GetTtar();
+    }
+    else if (Event.reportObject.object == Dis_OBJ_CUSTOM_DIGITS) {
+      int index = Event.reportObject.index;
+      int num = index - 16;
+      int ret = genie.GetEventData(&Event);
+      if (num >= 0 && num <= 3) {
+        if (HeatingTime_Counter[num] < 0) {
+          HeatingTemp_Max[num] = ret;
+          HeatingTemp_Min[num] = ret;
+          //        Serial_Log.print("Well");
+          //        Serial_Log.print(index-16+1);
+          //        Serial_Log.print(" Ttr = ");
+          //        Serial_Log.println(ret);
+        }
+      }
     }
   }
 }

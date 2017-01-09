@@ -1,4 +1,5 @@
 void Timer_setup() {
+  wdt_reset();
   timer.every(CycTime, Timer_CTR);
 }
 
@@ -10,10 +11,11 @@ void Timer_CTR() {
     serial_log_RXD();
     if (LogPrint_en)
       serial_log_TXD();
+    Dis_Settrigger();
     for (int i = 0; i < 4; i++) {
       Temp_steady[i] = Temp_check(i);
       Display_Progressbar(i);
-      Display_ReadyLED(i);
+      Display_Status(i);
       Display_RealTempDig(i);
       Display_ConstDig(i);
       Dis_LEDtrigger(i);
