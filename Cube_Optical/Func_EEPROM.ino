@@ -1,5 +1,4 @@
 void EEPROM_setup() {
-  wdt_reset();
   Serial_Log.begin(Baudrate_Log);
   unsigned char WriteInByte;
   EEPROM.get(EEPROM_WriteIn_addr, WriteInByte);

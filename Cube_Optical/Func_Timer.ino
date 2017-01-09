@@ -1,5 +1,4 @@
 void Timer_setup() {
-  wdt_reset();
   timer.every(CycTime, Timer_CTR);
 }
 

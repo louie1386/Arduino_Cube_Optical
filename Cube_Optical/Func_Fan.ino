@@ -1,5 +1,4 @@
 void Fan_setup() {
-  wdt_reset();
   pinMode(Fan, OUTPUT);
   digitalWrite(Fan, LOW);
   Fan_On();

@@ -1,5 +1,4 @@
 void PID_setup() {
-  wdt_reset();
   PID0.SetOutputLimits(0, PIDOutputLimit);
   PID0.SetSampleTime(PIDSampleTime);
   PID0.SetMode(AUTOMATIC);

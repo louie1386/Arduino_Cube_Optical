@@ -20,11 +20,10 @@
     1.08      新增4Dsystem 溫度設定顯示
 */
 #define Version         "1.08."
-#define subVersion      "12.14.01"//NO.2
+#define subVersion      "12.07.01.No1"
 
 //Pin define-----------------
 //Analog Pin
-#define TIC0            A0  //PF0, P97
 #define TIC1            A1  //PF1, P96
 #define TIC2            A2  //PF2, P95
 #define TIC3            A3  //PF3, P94
@@ -59,6 +58,7 @@
 //MOSI  51
 //SCK   52
 #define  SSPin          53  //PB0, P19
+#define TIC0            A0  //PF0, P97
 
 #define  Dis_Module     19  //RX1
 #define  SD_Module      17  //RX2
@@ -77,10 +77,10 @@ Timer timer;
 int Cycles = 0;
 
 //Temp-----------------------
-#define TempIC_Diff_0   -9.1
-#define TempIC_Diff_1   -9.1
-#define TempIC_Diff_2   -11
-#define TempIC_Diff_3   -12
+#define TempIC_Diff_0   (-14)
+#define TempIC_Diff_1   (-14)
+#define TempIC_Diff_2   (-14)
+#define TempIC_Diff_3   (-10)
 
 #define TempIC_base     400
 #define TempIC_reso     19.5
@@ -120,7 +120,7 @@ double   LogEEPROM_data = 0;
 
 #define dKp   200
 #define dKi   0
-#define dKd   0
+#define dKd   20
 
 double  Volt[4] = {0, 0, 0, 0};
 int     PIDnum = 0;
@@ -135,10 +135,10 @@ PID PID3(&Temp[3], &Volt[3], &Tar[3], dKp, dKi, dKd, DIRECT);
 #define PreHeatingTime_Def    60    //預熱時間
 #define ResponseTime_Def      HeatingTime_Def - PreHeatingTime_Def
 
-#define PreHeatingTemp_Def    120    //預熱溫度
-#define StandbyTemp_Def       90    //待機溫度
-#define HeatingTemp_Max_Def   90   //PCR反應溫度
-#define HeatingTemp_Min_Def   90   //PCR反應溫度
+#define PreHeatingTemp_Def    110    //預熱溫度
+#define StandbyTemp_Def       80    //待機溫度
+#define HeatingTemp_Max_Def   88    //PCR反應溫度
+#define HeatingTemp_Min_Def   88    //PCR反應溫度
 
 double  HeatingTime[4]        = {HeatingTime_Def, HeatingTime_Def, HeatingTime_Def, HeatingTime_Def};
 double  ResponseTime[4]       = {ResponseTime_Def, ResponseTime_Def, ResponseTime_Def, ResponseTime_Def};
@@ -188,10 +188,10 @@ CubeLed CL0, CL1, CL2, CL3;
 #define  RangeSelectBits    B0110
 #define  ConvStartBits      B0000
 
-#define  PD_Cons_0          0.54//0.48
-#define  PD_Cons_1          0.32//0.43
-#define  PD_Cons_2          0.53//0.37
-#define  PD_Cons_3          0.43//0.40
+#define  PD_Cons_0          0.48//5mm,NO.1
+#define  PD_Cons_1          0.43//5mm,NO.1
+#define  PD_Cons_2          0.37//5mm,NO.1
+#define  PD_Cons_3          0.40//5mm,NO.1
 
 int ChannelPin[8] = {Well_0_A, Well_0_B, Well_1_A, Well_1_B, Well_2_A, Well_2_B, Well_3_A, Well_3_B};
 unsigned int SPI_ADCdata[8];
@@ -224,8 +224,8 @@ double PD_Cons[4] = {PD_Cons_0, PD_Cons_1, PD_Cons_2, PD_Cons_3};
 
 #define Dis_pA_Gate_Def       100
 #define Dis_pB_Gate_Def       100
-#define Dis_Ratio_Max         1.3
-#define Dis_Ratio_Min         0.32
+#define Dis_Ratio_Max         2
+#define Dis_Ratio_Min         0.5
 
 Genie genie;
 
@@ -329,12 +329,12 @@ bool Save_cardin = false;
 
 void setup() {
   // put your setup code here, to run once:
-  wdt_enable(WDTO_4S);
-  Buzzer_setup();
-  EEPROM_setup();
+  delay(1000);
+  //EEPROM_setup();
   Fan_setup();
   Serial_setup();
   TempIC_setup();
+  Buzzer_setup();
   Button_setup();
   LED_setup();
   PID_setup();
@@ -342,6 +342,7 @@ void setup() {
   SavaData_setup();
   Display_setup();
   Timer_setup();
+  wdt_enable(WDTO_4S);
 }
 
 void loop() {

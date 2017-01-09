@@ -1,5 +1,4 @@
 void Serial_setup() {
-  wdt_reset();
   Serial_Log.begin(Baudrate_Log);
   Serial_Log.println("");
   Serial_Log.print("Start/Reset (Version: ");

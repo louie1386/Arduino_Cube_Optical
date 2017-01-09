@@ -1,5 +1,4 @@
 void Buzzer_setup() {
-  wdt_reset();
   buzzer_once();
 }
 

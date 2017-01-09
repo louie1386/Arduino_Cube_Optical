@@ -1,5 +1,4 @@
 void Button_setup() {
-  wdt_reset();
   pinMode(Button_0, INPUT);
   pinMode(Button_1, INPUT);
   pinMode(Button_2, INPUT);
