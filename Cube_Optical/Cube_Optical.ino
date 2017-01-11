@@ -18,9 +18,10 @@
     1.06      新增待機溫度與強制開燈變數
     1.07      新增4Dsystem 倒數計時顯示
     1.08      新增4Dsystem 溫度設定顯示
+    1.09      修改4Dsystem GUI與SD卡存檔修正
 */
-#define Version         "1.08."
-#define subVersion      "01.09.01"
+#define Version         "1.09."
+#define subVersion      "01.11.01"
 
 //Custom---------------------NO.1
 #define TempIC_Diff_0_Custom      (-14)
@@ -40,15 +41,16 @@
 #define HeatingTemp_Max_Custom    88    //PCR反應溫度
 #define HeatingTemp_Min_Custom    88    //PCR反應溫度
 
-#define  PD_Cons_0_Custom         0.48//5mm,NO.1
-#define  PD_Cons_1_Custom         0.43//5mm,NO.1
-#define  PD_Cons_2_Custom         0.37//5mm,NO.1
-#define  PD_Cons_3_Custom         0.40//5mm,NO.1
+#define  PD_Cons_0_Custom         0.48  //5mm,NO.1
+#define  PD_Cons_1_Custom         0.43  //5mm,NO.1
+#define  PD_Cons_2_Custom         0.37  //5mm,NO.1
+#define  PD_Cons_3_Custom         0.40  //5mm,NO.1
 
 #define Dis_pA_Gate_Def_Custom    100
 #define Dis_pB_Gate_Def_Custom    100
 #define Dis_Ratio_Max_Custom      2
 #define Dis_Ratio_Min_Custom      0.5
+#define Dis_ResultImg_Type_Custom 0     //Type 0: Two-Symbol Type(A & B), Type 1: One-Symbol Type
 
 //Pin define-----------------
 //Analog Pin
@@ -183,7 +185,7 @@ int   HeatingTime_Counter[4] = {Heating_beg_tag, Heating_beg_tag, Heating_beg_ta
 bool  Heating_Ready[4] = {false, false, false, false};
 
 //Button---------------------
-#define button_disable_delay  2
+#define button_disable_delay  2*SecCycles
 
 bool  button[4] = {false, false, false, false};
 int   button_disable_counter[4] = {0, 0, 0, 0};
@@ -236,8 +238,11 @@ double PD_Cons[4] = {PD_Cons_0, PD_Cons_1, PD_Cons_2, PD_Cons_3};
 
 #define Dis_Progressbar_Indexbase   8
 #define Dis_Status_Indexbase        12
-#define Dis_Tr_Indexbase            4
-#define Dis_Tr_new_Indexbase        16
+
+#define Dis_PreH_Def_Index          4
+#define Dis_Tr_Def_Index            5
+#define Dis_PreH_new_Index          16
+#define Dis_Tr_new_Index            17
 
 #define Dis_ADCcon_Def        2000
 
@@ -247,8 +252,13 @@ double PD_Cons[4] = {PD_Cons_0, PD_Cons_1, PD_Cons_2, PD_Cons_3};
 #define Dis_Status_Reaction2  3
 #define Dis_Status_Finish     4
 
-#define Dis_ResultImg_Posi    1
-#define Dis_ResultImg_Nega    2
+//#define Dis_ResultImg_Posi    1
+//#define Dis_ResultImg_Nega    2
+#define Dis_ResultImg_Def     0
+#define Dis_ResultImg_PP      1
+#define Dis_ResultImg_PN      2
+#define Dis_ResultImg_NP      3
+#define Dis_ResultImg_NN      4
 
 #define Dis_pA_Gate_Def       Dis_pA_Gate_Def_Custom
 #define Dis_pB_Gate_Def       Dis_pB_Gate_Def_Custom
@@ -279,6 +289,7 @@ int     Dis_data_base_avg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 bool    Dis_plot_base_enable = true;
 bool    Display_Module = false;
 int     Dis_plot_draw[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+int     Dis_ResultImg_Type = Dis_ResultImg_Type_Custom;
 
 //EEPROM---------------------
 #define EEPROM_readdef_eable    false

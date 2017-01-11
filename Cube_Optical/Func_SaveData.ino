@@ -20,7 +20,7 @@ void SavaData_Reset() {
 void SavaData_CheckModule() {
   pinMode(SD_Module, INPUT);
   Save_Module = digitalRead(SD_Module);
-//  Save_Module = false;
+  //  Save_Module = false;
   if (Save_Module)
     Serial_Log.println("SD Moudle: True");
   else
@@ -70,9 +70,7 @@ void SavaData_NewPath(int Num) {
 
 void SavaData_OpenFile(int num) {
   if (Save_cardin) {
-    if (Save_file_ID[num])
-      fprot_close(Save_file_ID[num]);
-    Save_file_num[num] = 0;
+    SavaData_CloseFile(num);
     SavaData_NewPath(num);
     unsigned char File_ID = 0;
     while (fprot_open(Save_file_path, FPROT_MODE_RW | FPROT_MODE_CREATE_NEW, &File_ID) != FPROT_NO_ERROR) {
@@ -89,6 +87,8 @@ void SavaData_OpenFile(int num) {
       Save_file_ID[num] = 0;
     }
     else {
+      for (int i = 0; i < 8; i++)
+        Dis_plot_draw[i] = 0;
       SaveData_WriteIn_Title(num);
       fprot_flush(Save_file_ID[num]);
       Serial_Log.print("-----------Open well");
@@ -102,6 +102,7 @@ void SavaData_OpenFile(int num) {
 void SavaData_CloseFile(int num) {
   if (Save_cardin) {
     if (Save_file_ID[num]) {
+      SaveData_WriteIn(num, String("Close File!"));
       fprot_flush(Save_file_ID[num]);
       fprot_close(Save_file_ID[num]);
       Serial_Log.print("-----------Close well");
@@ -135,12 +136,18 @@ void SavaData_CheckCard() {
 
 void SaveData_WriteIn(int num, String str) {
   unsigned long written;
+  unsigned char ret;
   int strlength = str.length() + 1;
   char strarray[strlength];
   str.toCharArray(strarray, strlength);
   if (Save_cardin) {
     if (Save_file_ID[num]) {
-      fprot_write(Save_file_ID[num], strarray, strlen(strarray), &written);
+      ret = fprot_write(Save_file_ID[num], strarray, strlen(strarray), &written);
+//      if (ret != FPROT_NO_ERROR) {
+//        Serial_Sav.end();
+//        Serial_Sav.begin(Baudrate_Sav_New);
+//        delay(10);
+//      }
       //fprot_flush(Save_file_ID[num]);
     }
   }
