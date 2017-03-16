@@ -17,13 +17,14 @@ void Button_check(int ch) {
     if (Heating_Begin[ch] == false) {
       buzzer_once();
       if (Temp_steady[ch] == true) {
-        HeatingTime_Counter[ch] = HeatingTime[ch] * SecCycles;
-        Tar[ch] = PreHeatingTemp[ch];
+        HeatingTime_Counter[ch] = HeatingTime[ch];
+        Tar[ch] = PreHeatingTemp[ch] + BoostTemp_Diff[ch];
         Heating_Begin[ch] = true;
         Heating_Ready[ch] = true;
-        Display_ResultImg(ch, true);
         Display_PlotImg(ch, true);
-        SavaData_OpenFile(ch);
+        Display_ResultImg(ch, true);
+        if (USB_Module == true && USB_Disk_In == true)
+          SavaData_CreateFile(ch);
       }
     }
   }
@@ -32,19 +33,24 @@ void Button_check(int ch) {
       button_disable_counter[ch]--;
     }
     else {
-      if (Heating_Begin[ch])
-        SavaData_CloseFile(ch);
+      if (Heating_Begin[ch]) {
+        //        SavaData_CloseFile(ch);
+      }
       Heating_Begin[ch] = false;
       HeatingTime_Counter[ch] = Heating_beg_tag;
       if (Heating_Ready[ch])
         Tar[ch] = StandbyTemp_Def;
       else {
         if (Temp_steady[ch] == true) {
-          Tar[ch] = StandbyTemp_Def;
-          Heating_Ready[ch] = true;
+          if (WarmUpTime_Counter[ch])
+            WarmUpTime_Counter[ch]--;
+          else {
+            Tar[ch] = StandbyTemp_Def;
+            Heating_Ready[ch] = true;
+          }
         }
         else
-          Tar[ch] = PreHeatingTemp[ch];
+          Tar[ch] = PreHeatingTemp[ch] + BoostTemp_Diff[ch];
       }
     }
   }

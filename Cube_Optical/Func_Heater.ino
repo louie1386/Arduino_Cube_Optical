@@ -1,6 +1,7 @@
 void  HeatingTime_CounterRun(int num) {
   wdt_reset();
-  if (HeatingTime_Counter[num] == (ResponseTime[num] * SecCycles)) {
+  Timer_Test(num);
+  if (HeatingTime_Counter[num] == ResponseTime[num]) {
     Tar[num] = HeatingTemp_Min[num];
     Temp_steady[num] = Temp_check(num);
     if (Temp_steady[num] == false) {
@@ -15,7 +16,7 @@ void  HeatingTime_CounterRun(int num) {
     HeatingTime_Counter[num] = Heating_fin_tag;
     Tar[num] = 0;
   }
-  else if (HeatingTime_Counter[num] < (ResponseTime[num] * SecCycles) && HeatingTime_Counter[num] > 0) {
+  else if (HeatingTime_Counter[num] < ResponseTime[num] && HeatingTime_Counter[num] > 0) {
     if (Temp[num] >= HeatingTemp_Max[num])
       Tar[num] = HeatingTemp_Min[num];
     else if (Temp[num] <= HeatingTemp_Min[num])

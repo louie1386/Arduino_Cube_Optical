@@ -2,6 +2,8 @@ void  TempIC_setup() {
   wdt_reset();
   analogReference(DEFAULT);
   ADC3V3 = analogRead(AREF_3V3);
+  for (int i = 0; i < 4; i++)
+    Tar[i] = PreHeatingTemp[i] + BoostTemp_Diff[i];
 }
 
 double TempIC_get(int pin) {
@@ -33,4 +35,21 @@ bool  Temp_check(int ch) {
     return false;
 }
 
+double Temp_Get_Data(int ch) {
+  if (!Temp_simulation)
+    return Temp_avg(ch);
+  else
+    return Temp_Data_simulation(ch);
+}
+
+double Temp_Data_simulation(int ch) {
+  double DS_temp;
+  if (Temp[ch] == 0)
+    Temp[ch] = Temp[4];
+  if (Temp[ch] < Tar[ch])
+    DS_temp = Temp[ch] + ((Tar[ch] - Temp[ch]) / 10);
+  else
+    DS_temp = Temp[ch] - ((Temp[ch] - Tar[ch]) / 10);
+  return DS_temp;
+}
 

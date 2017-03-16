@@ -15,7 +15,7 @@ void PID_setup() {
 }
 
 void PID_Control(int num) {
-  Temp[num] = Temp_avg(num);
+  Temp[num] = Temp_Get_Data(num);
 
   switch (num) {
     case  0:

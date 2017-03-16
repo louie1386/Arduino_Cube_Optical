@@ -2,11 +2,14 @@
 #include <avr/wdt.h>
 #include <fprot.h>
 #include <genieArduino.h>
-#include <EEPROM.h>
 #include <PID_v1.h>
 #include <Event.h>
 #include <Timer.h>
 #include <SPI.h>
+#include <Custom_Setting.h>
+#include <Wire.h>
+#include <Time.h>
+#include <DS1307RTC.h>
 
 /*  Version   修改內容
     1.00      初版(含目標溫度震盪功能)
@@ -19,38 +22,15 @@
     1.07      新增4Dsystem 倒數計時顯示
     1.08      新增4Dsystem 溫度設定顯示
     1.09      修改4Dsystem GUI與SD卡存檔修正
+    1.10      新增上風扇控制與修改結果判斷公式
+    2.00      修改儲存裝置為USB disk，修改演算法，修改LED控制
 */
-#define Version         "1.09."
-#define subVersion      "01.11.01"
+#define Version         "2.00."
+#define subVersion      "03.15.01"
 
-//Custom---------------------NO.1
-#define TempIC_Diff_0_Custom      (-14)
-#define TempIC_Diff_1_Custom      (-14)
-#define TempIC_Diff_2_Custom      (-14)
-#define TempIC_Diff_3_Custom      (-10)
-
-#define dKp_Custom                200
-#define dKi_Custom                0
-#define dKd_Custom                20
-
-#define HeatingTime_Custom        900   //PCR反應時間(含預熱時間)
-#define PreHeatingTime_Custom     60    //預熱時間
-
-#define PreHeatingTemp_Custom     110   //預熱溫度
-#define StandbyTemp_Custom        80    //待機溫度
-#define HeatingTemp_Max_Custom    88    //PCR反應溫度
-#define HeatingTemp_Min_Custom    88    //PCR反應溫度
-
-#define  PD_Cons_0_Custom         0.48  //5mm,NO.1
-#define  PD_Cons_1_Custom         0.43  //5mm,NO.1
-#define  PD_Cons_2_Custom         0.37  //5mm,NO.1
-#define  PD_Cons_3_Custom         0.40  //5mm,NO.1
-
-#define Dis_pA_Gate_Def_Custom    100
-#define Dis_pB_Gate_Def_Custom    100
-#define Dis_Ratio_Max_Custom      2
-#define Dis_Ratio_Min_Custom      0.5
-#define Dis_ResultImg_Type_Custom 0     //Type 0: Two-Symbol Type(A & B), Type 1: One-Symbol Type
+//Function Simulation-----------------
+bool ADC_simulation = true;
+bool Temp_simulation = true;
 
 //Pin define-----------------
 //Analog Pin
@@ -82,7 +62,11 @@
 #define Button_3        22  //PA0, P78
 
 #define DisReset        41  //PG0, P51
-#define SavReset        38  //PD7, P50
+
+#define USB_INT_pin     38
+#define USB_RST_pin     40
+#define USB_RXD_pin     16
+#define USB_TXD_pin     17
 
 //SPI Pin:
 //MISO  50
@@ -91,7 +75,7 @@
 #define  SSPin          53  //PB0, P19
 
 #define  Dis_Module     19  //RX1
-#define  SD_Module      17  //RX2
+//#define  SD_Module      17  //RX2
 
 int   TIC_pin[6] = {TIC0, TIC1, TIC2, TIC3, TIC4, TIC5};
 int   Heater_pin[4] = {Heater_0, Heater_1, Heater_2, Heater_3};
@@ -101,11 +85,11 @@ int   button_pin[4] = {Button_0, Button_1, Button_2, Button_3};
 //Timer----------------------
 #define CycTime         100
 #define SecTime         1000
-#define SecCycles       (SecTime / CycTime)
+#define FuncFreq        (SecTime / CycTime)
 
 Timer timer;
-int Cycles = 0;
-
+int FuncFreq_num = 0;
+unsigned long TimeStart[4], TimeEnd[4];
 //Temp-----------------------
 #define TempIC_Diff_0   TempIC_Diff_0_Custom
 #define TempIC_Diff_1   TempIC_Diff_1_Custom
@@ -130,8 +114,9 @@ bool    Temp_steady[4] =  {false, false, false, false};
 #define Serial_Sav Serial2
 #define Baudrate_Log      250000
 #define Baudrate_Dis      115200
-#define Baudrate_Sav_Def  9600
-#define Baudrate_Sav_New  115200
+//#define Baudrate_Sav_Def  9600
+//#define Baudrate_Sav_New  115200
+#define Baudrate_Sav  115200
 
 bool  LogPrint_en = false;
 bool  LogEEPROM_en = false;
@@ -161,17 +146,24 @@ PID PID2(&Temp[2], &Volt[2], &Tar[2], dKp, dKi, dKd, DIRECT);
 PID PID3(&Temp[3], &Volt[3], &Tar[3], dKp, dKi, dKd, DIRECT);
 
 //Heater--------------------
-#define HeatingTime_Def       HeatingTime_Custom        //PCR反應時間(含預熱時間)
-#define PreHeatingTime_Def    PreHeatingTime_Custom     //預熱時間
+#define WarmUpTime_Def        WarmUpTime_Def_Custom * FuncFreq
+#define HeatingTime_Def       HeatingTime_Custom * FuncFreq
+#define PreHeatingTime_Def    PreHeatingTime_Custom * FuncFreq
 #define ResponseTime_Def      HeatingTime_Def - PreHeatingTime_Def
 
-#define PreHeatingTemp_Def    PreHeatingTemp_Custom     //預熱溫度
-#define StandbyTemp_Def       StandbyTemp_Custom        //待機溫度
-#define HeatingTemp_Max_Def   HeatingTemp_Max_Custom    //PCR反應溫度
-#define HeatingTemp_Min_Def   HeatingTemp_Min_Custom    //PCR反應溫度
+#define PreHeatingTemp_Def    PreHeatingTemp_Custom
+#define StandbyTemp_Def       StandbyTemp_Custom
+#define HeatingTemp_Max_Def   HeatingTemp_Max_Custom
+#define HeatingTemp_Min_Def   HeatingTemp_Min_Custom
+
+#define Boost1_Diff           Boost1_Diff_Custom
+#define Boost2_Diff           Boost2_Diff_Custom
+#define Boost3_Diff           Boost3_Diff_Custom
+#define Boost4_Diff           Boost4_Diff_Custom
 
 double  HeatingTime[4]        = {HeatingTime_Def, HeatingTime_Def, HeatingTime_Def, HeatingTime_Def};
 double  ResponseTime[4]       = {ResponseTime_Def, ResponseTime_Def, ResponseTime_Def, ResponseTime_Def};
+double  BoostTemp_Diff[4]     = {Boost1_Diff, Boost2_Diff, Boost3_Diff, Boost4_Diff};
 double  PreHeatingTemp[4]     = {PreHeatingTemp_Def, PreHeatingTemp_Def, PreHeatingTemp_Def, PreHeatingTemp_Def};
 double  HeatingTemp_Max[4]    = {HeatingTemp_Max_Def, HeatingTemp_Max_Def, HeatingTemp_Max_Def, HeatingTemp_Max_Def};
 double  HeatingTemp_Min[4]    = {HeatingTemp_Min_Def, HeatingTemp_Min_Def, HeatingTemp_Min_Def, HeatingTemp_Min_Def};
@@ -181,19 +173,20 @@ double  HeatingTemp_Min[4]    = {HeatingTemp_Min_Def, HeatingTemp_Min_Def, Heati
 #define Heating_fin_tag       (-2)
 
 bool  Heating_Begin[4] = {false, false, false, false};
-int   HeatingTime_Counter[4] = {Heating_beg_tag, Heating_beg_tag, Heating_beg_tag, Heating_beg_tag};
 bool  Heating_Ready[4] = {false, false, false, false};
+int   HeatingTime_Counter[4] = {Heating_beg_tag, Heating_beg_tag, Heating_beg_tag, Heating_beg_tag};
+int   WarmUpTime_Counter[4] = {WarmUpTime_Def, WarmUpTime_Def, WarmUpTime_Def, WarmUpTime_Def};
 
 //Button---------------------
-#define button_disable_delay  2*SecCycles
+#define button_disable_delay  2 * FuncFreq
 
 bool  button[4] = {false, false, false, false};
 int   button_disable_counter[4] = {0, 0, 0, 0};
 
 //LED-----------------------
-#define LED_MaskSec         120
-#define LED_CycleSec        60
-#define LED_OnSec           5
+#define LED_MaskSec         120 * FuncFreq
+#define LED_CycleSec        10 * FuncFreq
+#define LED_OnSec           2.1 * FuncFreq
 
 int   LED_MaskSec_array[4] = {LED_MaskSec, LED_MaskSec, LED_MaskSec, LED_MaskSec};
 int   LED_CycleSec_array[4] = {LED_CycleSec, LED_CycleSec, LED_CycleSec, LED_CycleSec};
@@ -223,9 +216,27 @@ CubeLed CL0, CL1, CL2, CL3;
 #define  PD_Cons_2          PD_Cons_2_Custom
 #define  PD_Cons_3          PD_Cons_3_Custom
 
-int ChannelPin[8] = {Well_0_A, Well_0_B, Well_1_A, Well_1_B, Well_2_A, Well_2_B, Well_3_A, Well_3_B};
+int     ChannelPin[8] = {Well_0_A, Well_0_B, Well_1_A, Well_1_B, Well_2_A, Well_2_B, Well_3_A, Well_3_B};
 unsigned int SPI_ADCdata[8];
-double PD_Cons[4] = {PD_Cons_0, PD_Cons_1, PD_Cons_2, PD_Cons_3};
+double  PD_Cons[4] = {PD_Cons_0, PD_Cons_1, PD_Cons_2, PD_Cons_3};
+
+//Data Simulation---------------------
+#define DS_LED_OFF_base_A   300
+#define DS_LED_OFF_base_B   300
+#define DS_LED_ON_base_A    1500
+#define DS_LED_ON_base_B    1000
+#define DS_shift_A          0
+#define DS_shift_B          0
+#define DS_increments_A     15
+#define DS_increments_B     20
+
+#define DS_shift_Time_A           0
+#define DS_shift_Time_B           0
+#define DS_increments_Time_A      41
+#define DS_increments_Time_B      42
+
+bool    DS_LED_Prev[4] = {false, false, false, false};
+int     DS_LED_On_num[4] = {0, 0, 0, 0};
 
 //Display---------------------
 #define Dis_OBJ_GAUGE           GENIE_OBJ_GAUGE
@@ -244,6 +255,9 @@ double PD_Cons[4] = {PD_Cons_0, PD_Cons_1, PD_Cons_2, PD_Cons_3};
 #define Dis_PreH_new_Index          16
 #define Dis_Tr_new_Index            17
 
+#define Dis_PDADC_Index             6
+#define Dis_LED_Index               6
+
 #define Dis_ADCcon_Def        2000
 
 #define Dis_Status_PreHeater  0
@@ -252,18 +266,26 @@ double PD_Cons[4] = {PD_Cons_0, PD_Cons_1, PD_Cons_2, PD_Cons_3};
 #define Dis_Status_Reaction2  3
 #define Dis_Status_Finish     4
 
-//#define Dis_ResultImg_Posi    1
-//#define Dis_ResultImg_Nega    2
-#define Dis_ResultImg_Def     0
-#define Dis_ResultImg_PP      1
-#define Dis_ResultImg_PN      2
-#define Dis_ResultImg_NP      3
-#define Dis_ResultImg_NN      4
+#define Dis_ResultImg_D_Def     0
+#define Dis_ResultImg_D_PP      1
+#define Dis_ResultImg_D_PN      2
+#define Dis_ResultImg_D_NP      3
+#define Dis_ResultImg_D_NN      4
+#define Dis_ResultImg_S_Def     5
+#define Dis_ResultImg_S_PP      6
+#define Dis_ResultImg_S_PN      7
+#define Dis_ResultImg_S_NP      8
+#define Dis_ResultImg_S_NN      9
 
+#define Dis_delta_Gate        Dis_delta_Gate_Custom
+#define Dis_sigma_Gate        Dis_sigma_Gate_Custom
 #define Dis_pA_Gate_Def       Dis_pA_Gate_Def_Custom
 #define Dis_pB_Gate_Def       Dis_pB_Gate_Def_Custom
 #define Dis_Ratio_Max         Dis_Ratio_Max_Custom
 #define Dis_Ratio_Min         Dis_Ratio_Min_Custom
+
+#define Dis_Plot_Width        260
+#define Dis_Plot_High_posi    150
 
 Genie genie;
 
@@ -271,107 +293,115 @@ double  Dis_plot_Gate[2] = {Dis_pA_Gate_Def, Dis_pB_Gate_Def};
 double  Dis_plot_Ratio[2] = {Dis_Ratio_Max, Dis_Ratio_Min};
 
 double  Dis_data_avg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+double  Dis_data_avg_prev[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+double  Dis_Sigma[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+double  Dis_plot[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 int     Dis_data_num[4] = {0, 0, 0, 0};
 int     Dis_plot_num[4] = {0, 0, 0, 0};
-int     Dis_plot_zero[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-int     Dis_plot_end[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-int     Dis_data_base[8][10] = {
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-};
-int     Dis_data_base_avg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-bool    Dis_plot_base_enable = true;
-bool    Display_Module = false;
-int     Dis_plot_draw[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 int     Dis_ResultImg_Type = Dis_ResultImg_Type_Custom;
-
-//EEPROM---------------------
-#define EEPROM_readdef_eable    false
-#define Size_Double             sizeof(double)
-
-#define EEPROM_WriteInByte      0xFF
-#define EEPROM_WriteIn_addr     0x0000
-
-#define HeatingTime_0_addr      0x0100
-#define HeatingTime_1_addr      HeatingTime_0_addr + Size_Double
-#define HeatingTime_2_addr      HeatingTime_1_addr + Size_Double
-#define HeatingTime_3_addr      HeatingTime_2_addr + Size_Double
-
-#define ResponseTime_0_addr     0x0200
-#define ResponseTime_1_addr     ResponseTime_0_addr + Size_Double
-#define ResponseTime_2_addr     ResponseTime_1_addr + Size_Double
-#define ResponseTime_3_addr     ResponseTime_2_addr + Size_Double
-
-#define PreHeatingTemp_0_addr   0x0300
-#define PreHeatingTemp_1_addr   PreHeatingTemp_0_addr + Size_Double
-#define PreHeatingTemp_2_addr   PreHeatingTemp_1_addr + Size_Double
-#define PreHeatingTemp_3_addr   PreHeatingTemp_2_addr + Size_Double
-
-#define HeatingTemp_Max_0_addr  0x0400
-#define HeatingTemp_Max_1_addr  HeatingTemp_Max_0_addr + Size_Double
-#define HeatingTemp_Max_2_addr  HeatingTemp_Max_1_addr + Size_Double
-#define HeatingTemp_Max_3_addr  HeatingTemp_Max_2_addr + Size_Double
-
-#define HeatingTemp_Min_0_addr  0x0500
-#define HeatingTemp_Min_1_addr  HeatingTemp_Min_0_addr + Size_Double
-#define HeatingTemp_Min_2_addr  HeatingTemp_Min_1_addr + Size_Double
-#define HeatingTemp_Min_3_addr  HeatingTemp_Min_2_addr + Size_Double
-
-#define Temp_diff_0_addr        0x0600
-#define Temp_diff_1_addr        Temp_diff_0_addr + Size_Double
-#define Temp_diff_2_addr        Temp_diff_1_addr + Size_Double
-#define Temp_diff_3_addr        Temp_diff_2_addr + Size_Double
-
-#define PD_Cons_0_addr          0x0700
-#define PD_Cons_1_addr          PD_Cons_0_addr + Size_Double
-#define PD_Cons_2_addr          PD_Cons_1_addr + Size_Double
-#define PD_Cons_3_addr          PD_Cons_2_addr + Size_Double
-
-#define Dis_plot_Gate_A_addr    0x0800
-#define Dis_plot_Gate_B_addr    Dis_plot_Gate_A_addr + Size_Double
-
-unsigned int HeatingTime_addr[4]     = {HeatingTime_0_addr, HeatingTime_1_addr, HeatingTime_2_addr, HeatingTime_3_addr};
-unsigned int ResponseTime_addr[4]    = {ResponseTime_0_addr, ResponseTime_1_addr, ResponseTime_2_addr, ResponseTime_3_addr};
-unsigned int PreHeatingTemp_addr[4]  = {PreHeatingTemp_0_addr, PreHeatingTemp_1_addr, PreHeatingTemp_2_addr, PreHeatingTemp_3_addr};
-unsigned int HeatingTemp_Max_addr[4] = {HeatingTemp_Max_0_addr, HeatingTemp_Max_1_addr, HeatingTemp_Max_2_addr, HeatingTemp_Max_3_addr};
-unsigned int HeatingTemp_Min_addr[4] = {HeatingTemp_Min_0_addr, HeatingTemp_Min_1_addr, HeatingTemp_Min_2_addr, HeatingTemp_Min_3_addr};
-unsigned int Temp_diff_addr[4]       = {Temp_diff_0_addr, Temp_diff_1_addr, Temp_diff_2_addr, Temp_diff_3_addr};
-unsigned int PD_Cons_addr[4]         = {PD_Cons_0_addr, PD_Cons_1_addr, PD_Cons_2_addr, PD_Cons_3_addr};
-unsigned int Dis_plot_Gate_addr[2]   = {Dis_plot_Gate_A_addr, Dis_plot_Gate_B_addr};
-
-#define EEPROM_itemnum      30
-unsigned int EEPROM_addr[EEPROM_itemnum] = {
-  HeatingTime_0_addr,       HeatingTime_1_addr,      HeatingTime_2_addr,      HeatingTime_3_addr,
-  ResponseTime_0_addr,      ResponseTime_1_addr,     ResponseTime_2_addr,     ResponseTime_3_addr,
-  PreHeatingTemp_0_addr,    PreHeatingTemp_1_addr,   PreHeatingTemp_2_addr,   PreHeatingTemp_3_addr,
-  HeatingTemp_Max_0_addr,   HeatingTemp_Max_1_addr,  HeatingTemp_Max_2_addr,  HeatingTemp_Max_3_addr,
-  HeatingTemp_Min_0_addr,   HeatingTemp_Min_1_addr,  HeatingTemp_Min_2_addr,  HeatingTemp_Min_3_addr,
-  Temp_diff_0_addr,         Temp_diff_1_addr,        Temp_diff_2_addr,        Temp_diff_3_addr,
-  PD_Cons_0_addr,           PD_Cons_1_addr,          PD_Cons_2_addr,          PD_Cons_3_addr,
-  Dis_plot_Gate_A_addr,     Dis_plot_Gate_B_addr
-};
+bool    Display_Module = false;
 
 //Save data--------------------
-char Save_file_dir[] = "\\log";
-char Save_file_path[] = "\\log\\log_???_Well?.csv";
+#define SaveSettingCharSize 150
+#define SaveSettingItems    8
+#define SaveDataCharSize    150
+#define SaveDataItems       15
+String  Save_DirName = "/LOG";
+String  Save_FileName = "WNLOG000.CSV";
+String  Save_RealFileName[4] = {Save_FileName, Save_FileName, Save_FileName, Save_FileName};
+char    Save_Setting[] = "Well, Light Constant, Delta Gate, Sigma Gate, Result Gate, Max Ratio, Min Ratio, Total Time\r\n";
+char    Save_Setting_str[4][SaveSettingCharSize];
+char    Save_Title[] = "Time, Avg_A, Delta_A, Sigma_A, Plot_A, Avg_B, Delta_B, Sigma_B, Plot_B, LED(SW), LED(HW), WellTemp, LowerTemp, UpperTemp, FreeRam\r\n";
+char    Save_data_str[4][SaveDataCharSize];
+bool    Save_data_Ready[4] = {false, false, false, false};
+bool    Save_data_print = false;
+bool    Save_data_output_finish[4] = {false, false, false, false};
+bool    Save_data_Judgment_output[4] = {false, false, false, false};
+int     Save_data_Judgment[4];
 
-unsigned char Save_file_ID[4] = {0, 0, 0, 0};
-int Save_file_num[4] = {0, 0, 0, 0};
-bool Save_Module = false;
-bool Save_cardin = false;
+//USB Disk --------------------
+#define USB_CMD_tag0            0x57
+#define USB_CMD_tag1            0xAB
+
+#define USB_CMD_RESET_ALL       0x05
+#define USB_CMD_CHECK_EXIST     0x06
+#define USB_CMD_SET_USB_MODE    0x15
+#define USB_CMD_GET_STATUS      0x22
+#define USB_CMD_RD_USB_DATA0    0x27
+#define USB_CMD_WR_REQ_DATA     0x2D
+#define USB_CMD_WR_OFS_DATA     0x2E
+#define USB_CMD_SET_FILE_NAME   0x2F
+#define USB_CMD_DISK_CONNECT    0x30
+#define USB_CMD_DISK_MOUNT      0x31
+#define USB_CMD_FILE_OPEN       0x32
+#define USB_CMD_FILE_CREATE     0x34
+#define USB_CMD_FILE_CLOSE      0x36
+#define USB_CMD_DIR_INFO_READ   0x37
+#define USB_CMD_DIR_INFO_SAVE   0x38
+#define USB_CMD_BYTE_LOCATE     0x39
+#define USB_CMD_BYTE_WRITE      0x3C
+#define USB_CMD_BYTE_WR_GO      0x3D
+#define USB_CMD_DIR_CREATE      0x40
+
+#define USB_CMD_RET_SUCCESS     0x51
+#define USB_CMD_RET_ABORT       0x5F
+
+#define USB_INT_SUCCESS         0x14
+#define USB_INT_CONNECT         0x15
+#define USB_INT_DISCONNECT      0x16
+#define USB_INT_DISK_WRITE      0x1E
+
+#define USB_ERR_OPEN_DIR        0x41
+#define USB_ERR_MISS_FILE       0x42
+#define USB_ERR_DISK_DISCON     0x82
+
+#define USB_FAT32_Setuptime_addr      0x0E
+#define USB_FAT32_Setupdate_addr      0x10
+#define USB_FAT32_Accessdate_addr     0x12
+#define USB_FAT32_Modifytime_addr     0x16
+#define USB_FAT32_Modifydate_addr     0x18
+
+byte USB_RET[50];
+bool USB_INT = false;
+bool USB_Module = false;
+bool USB_Disk_In = false;
+bool USB_debug_print = false;
+
+//RTC--------------------------
+tmElements_t tm;
+int RTC_Hour = 00;
+int RTC_Min = 00;
+int RTC_Sec = 00;
+int RTC_Day = 13;
+int RTC_Month = 3;
+int RTC_Year = 2017;
+bool RTC_print = false;
+
+tmElements_t RTCtm;
+
+//Fan--------------------------
+#define Fan_Gate0_Temp      Fan_Gate0_Temp_Custom
+#define Fan_Gate1_Temp      Fan_Gate1_Temp_Custom
+#define Fan_Gate2_Temp      Fan_Gate2_Temp_Custom
+#define Fan_Gate3_Temp      Fan_Gate3_Temp_Custom
+
+#define Fan_PWM_LowPower0   Fan_PWM_LowPower0_Custom
+#define Fan_PWM_LowPower1   Fan_PWM_LowPower1_Custom
+#define Fan_PWM_FullPower   Fan_PWM_FullPower_Custom
+
+int Fan_PWM_now = Fan_PWM_LowPower0;
+
+//FreeRam--------------------------
+int freeRam ()
+{
+  extern int __heap_start, *__brkval;
+  int v;
+  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+}
 
 void setup() {
   // put your setup code here, to run once:
   wdt_enable(WDTO_4S);
-  Buzzer_setup();
-//  EEPROM_setup();
-  Fan_setup();
   Serial_setup();
   TempIC_setup();
   Button_setup();
@@ -380,14 +410,18 @@ void setup() {
   ADC_setup();
   SavaData_setup();
   Display_setup();
+  Fan_setup();
   Timer_setup();
-  Serial_Log.println("Setup end!");
+  Buzzer_setup();
+  RTC_setup();
+  Serial_Log.println("-----------------------------Setup end!");
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
   timer.update();
   PID_Loop();
+  USBdisk_INT();
   genie.DoEvents();
   wdt_reset();
 }
